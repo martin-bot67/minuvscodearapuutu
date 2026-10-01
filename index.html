@@ -199,6 +199,38 @@
       transform: translateY(-2px);
     }
 
+    .demo-panel {
+      margin-top: 22px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      border-radius: 18px;
+      padding: 18px 20px;
+      color: var(--muted);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .demo-panel.hidden {
+      display: none;
+    }
+
+    .demo-panel h3 {
+      margin: 0 0 10px;
+      color: var(--text);
+      font-size: 0.9rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .demo-panel ul {
+      margin: 0;
+      padding-left: 18px;
+      line-height: 1.9;
+    }
+
+    .demo-panel li::marker {
+      color: var(--cyan);
+    }
+
     .stats {
       display: flex;
       flex-wrap: wrap;
@@ -311,7 +343,7 @@
         <span>Systems</span>
         <span>Vision</span>
         <span>Launch</span>
-        <button>Enter</button>
+        <button id="toggleThemeBtn">Enter</button>
       </div>
     </div>
 
@@ -329,8 +361,17 @@
         </p>
 
         <div class="cta">
-          <button class="primary">Enter the void</button>
-          <button class="secondary">Watch demo</button>
+          <button class="primary" id="mainActionBtn">Enter the void</button>
+          <button class="secondary" id="demoBtn">Watch demo</button>
+        </div>
+
+        <div class="demo-panel hidden" id="demoPanel">
+          <h3>Demo stack</h3>
+          <ul>
+            <li>Rapid product concepting</li>
+            <li>Launch-ready design systems</li>
+            <li>High-velocity brand execution</li>
+          </ul>
         </div>
 
         <div class="stats">
@@ -363,5 +404,11 @@
       </div>
     </div>
   </div>
+
+  <script>
+    const demoBtn = document.getElementById('demoBtn');
+   
+    });
+  </script>
 </body>
 </html>
