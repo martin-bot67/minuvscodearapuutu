@@ -15,11 +15,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: FTPS Deploy to Zone
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.7
         with:
           server: githubdeploy.wrongs.eu
           username: d151313f1028978
-          password: ${{ secrets.labubu }}
+          password: ${{ secrets.secret }}
           protocol: ftps
           port: 21
           local-dir: ./
