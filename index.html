@@ -1,185 +1,173 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Pulse</title>
-    <style>
-        :root {
-            --bg1: #0b1020;
-            --bg2: #121b2d;
-            --panel: rgba(18, 27, 45, 0.82);
-            --neon: #7ef9ff;
-            --pink: #ff4ecd;
-            --purple: #9d7bff;
-            --text: #edf6ff;
-            --muted: #b4c3d9;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Random Pic Generator</title>
+  <style>
+    :root {
+      --bg1: #0f172a;
+      --bg2: #111827;
+      --card: rgba(15, 23, 42, 0.72);
+      --accent: #7c3aed;
+      --accent2: #22d3ee;
+      --text: #e5e7eb;
+      --muted: #cbd5e1;
+      --button: linear-gradient(135deg, var(--accent), var(--accent2));
+    }
 
-        * { box-sizing: border-box; }
+    * { box-sizing: border-box; }
 
-        html, body {
-            margin: 0;
-            height: 100%;
-            font-family: Arial, sans-serif;
-            color: var(--text);
-            background:
-                radial-gradient(circle at top, rgba(126, 249, 255, 0.2), transparent 30%),
-                radial-gradient(circle at bottom right, rgba(255, 78, 205, 0.15), transparent 25%),
-                linear-gradient(135deg, var(--bg1), var(--bg2));
-        }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top, rgba(124, 58, 237, 0.35), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.22), transparent 30%),
+        linear-gradient(135deg, var(--bg1), var(--bg2));
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
 
-        body {
-            min-height: 100vh;
-            display: grid;
-            place-items: center;
-            position: relative;
-            overflow: hidden;
-        }
+    .app {
+      width: min(960px, 100%);
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      padding: 32px;
+      backdrop-filter: blur(12px);
+    }
 
-        body::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
-            background-size: 28px 28px;
-            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
-            pointer-events: none;
-        }
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 4vw, 3.3rem);
+      letter-spacing: -0.04em;
+    }
 
-        .card {
-            position: relative;
-            z-index: 1;
-            width: min(900px, 88vw);
-            padding: 40px 32px;
-            border: 1px solid rgba(126, 249, 255, 0.35);
-            border-radius: 24px;
-            background: var(--panel);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 0 40px rgba(126, 249, 255, 0.12), 0 0 80px rgba(157, 123, 255, 0.14);
-        }
+    .subtitle {
+      margin: 0 0 24px;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
 
-        .badge {
-            display: inline-block;
-            padding: 8px 14px;
-            border-radius: 999px;
-            font-size: 12px;
-            letter-spacing: 0.14em;
-            text-transform: uppercase;
-            color: var(--neon);
-            background: rgba(126, 249, 255, 0.08);
-            border: 1px solid rgba(126, 249, 255, 0.25);
-            margin-bottom: 18px;
-        }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
 
-        h1 {
-            margin: 0;
-            font-size: clamp(2.6rem, 6vw, 5.5rem);
-            line-height: 0.95;
-            letter-spacing: -0.06em;
-        }
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: white;
+      background: var(--button);
+      box-shadow: 0 12px 30px rgba(124, 58, 237, 0.35);
+      transition: transform 0.2s ease;
+    }
 
-        .gradient {
-            background: linear-gradient(90deg, var(--neon), var(--pink), var(--purple));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
+    button:hover {
+      transform: translateY(-2px);
+    }
 
-        p {
-            color: var(--muted);
-            font-size: 1.1rem;
-            line-height: 1.7;
-            max-width: 620px;
-            margin: 20px 0 28px;
-        }
+    .link-box {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      word-break: break-all;
+      color: var(--muted);
+      font-size: 0.95rem;
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+    }
 
-        .actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
+    .img-wrap {
+      width: 100%;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+    }
 
-        .button {
-            display: inline-block;
-            padding: 14px 22px;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 700;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
+    img {
+      display: block;
+      width: 100%;
+      height: 420px;
+      object-fit: cover;
+      background: #0b1120;
+    }
 
-        .button:hover {
-            transform: translateY(-2px);
-        }
-
-        .button.primary {
-            color: #06131f;
-            background: linear-gradient(90deg, var(--neon), #b5fff8);
-            box-shadow: 0 10px 30px rgba(126, 249, 255, 0.3);
-        }
-
-        .button.secondary {
-            color: var(--text);
-            border: 1px solid rgba(126, 249, 255, 0.3);
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .stats {
-            margin-top: 28px;
-            display: flex;
-            gap: 22px;
-            flex-wrap: wrap;
-        }
-
-        .stat {
-            min-width: 120px;
-        }
-
-        .stat strong {
-            display: block;
-            font-size: 1.5rem;
-            color: var(--text);
-        }
-
-        .stat span {
-            color: var(--muted);
-            font-size: 0.85rem;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-        }
-    </style>
+    @media (max-width: 600px) {
+      .app { padding: 22px; }
+      img { height: 260px; }
+    }
+  </style>
 </head>
 <body>
-    <div class="card">
-        <div class="badge">Live • Creative</div>
-        <h1>Build the <span class="gradient">next big thing</span></h1>
-        <p>
-            This page is live from GitHub and automatically deployed to your website. Clean design,
-            fast hosting, and zero manual uploads.
-        </p>
+  <div class="app">
+    <h1>Random Picture Generator</h1>
+    <p class="subtitle">Click the button to get a fresh image link from the internet.</p>
 
-        <div class="actions">
-            <a class="button primary" href="#">Get Started</a>
-            <a class="button secondary" href="#">View Work</a>
-        </div>
-
-        <div class="stats">
-            <div class="stat">
-                <strong>24/7</strong>
-                <span>Online</span>
-            </div>
-            <div class="stat">
-                <strong>1-click</strong>
-                <span>Deploy</span>
-            </div>
-            <div class="stat">
-                <strong>∞</strong>
-                <span>Ideas</span>
-            </div>
-        </div>
+    <div class="controls">
+      <button id="generateBtn">Generate Random Image</button>
+      <button id="copyBtn" style="background: rgba(255,255,255,0.06); box-shadow: none; border: 1px solid rgba(255,255,255,0.1);">Copy Link</button>
     </div>
+
+    <div id="linkBox" class="link-box">Waiting for a fresh image...</div>
+
+    <div class="img-wrap">
+      <img id="randomImage" alt="Random internet image" src="" />
+    </div>
+  </div>
+
+  <script>
+    const generateBtn = document.getElementById('generateBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const linkBox = document.getElementById('linkBox');
+    const image = document.getElementById('randomImage');
+
+    function generateRandomUrl() {
+      const seed = Math.random().toString(36).slice(2, 10);
+      const width = 1200 + Math.floor(Math.random() * 600);
+      const height = 800 + Math.floor(Math.random() * 500);
+      return `https://picsum.photos/seed/${seed}/${width}/${height}`;
+    }
+
+    function loadRandomImage() {
+      const url = generateRandomUrl();
+      image.src = url;
+      image.alt = 'Random internet image';
+      linkBox.textContent = url;
+    }
+
+    generateBtn.addEventListener('click', loadRandomImage);
+
+    copyBtn.addEventListener('click', async () => {
+      const text = linkBox.textContent;
+      if (!text || text.includes('Waiting')) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => {
+          copyBtn.textContent = 'Copy Link';
+        }, 1200);
+      } catch (err) {
+        copyBtn.textContent = 'Copy failed';
+      }
+    });
+
+    loadRandomImage();
+  </script>
 </body>
 </html>
