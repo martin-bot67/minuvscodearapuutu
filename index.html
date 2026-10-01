@@ -407,7 +407,34 @@
 
   <script>
     const demoBtn = document.getElementById('demoBtn');
-   
+    const demoPanel = document.getElementById('demoPanel');
+    const toggleThemeBtn = document.getElementById('toggleThemeBtn');
+    const mainActionBtn = document.getElementById('mainActionBtn');
+
+    demoBtn.addEventListener('click', () => {
+      demoPanel.classList.toggle('hidden');
+      demoPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    mainActionBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.body.style.filter = 'hue-rotate(90deg) saturate(1.2)';
+      setTimeout(() => {
+        document.body.style.filter = 'none';
+      }, 600);
+    });
+
+    toggleThemeBtn.addEventListener('click', () => {
+      document.documentElement.style.setProperty('--bg1', '#0b1020');
+      document.documentElement.style.setProperty('--bg2', '#111827');
+      document.documentElement.style.setProperty('--bg3', '#312e81');
+      document.documentElement.style.setProperty('--cyan', '#67e8f9');
+      document.documentElement.style.setProperty('--pink', '#f9a8d4');
+      document.documentElement.style.setProperty('--violet', '#a78bfa');
+      toggleThemeBtn.textContent = 'Activated';
+      setTimeout(() => {
+        toggleThemeBtn.textContent = 'Enter';
+      }, 1200);
     });
   </script>
 </body>
