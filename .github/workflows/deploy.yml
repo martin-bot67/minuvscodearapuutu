@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - testpage
 
 jobs:
   deploy:
@@ -15,8 +14,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Deploy to public site
-        if: github.ref == 'refs/heads/main'
+      - name: FTPS Deploy to Zone
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: githubdeploy.wrongs.eu
@@ -26,15 +24,3 @@ jobs:
           port: 21
           local-dir: ./
           server-dir: /htdocs/
-
-      - name: Deploy to test page
-        if: github.ref == 'refs/heads/testpage'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: githubdeploy.wrongs.eu
-          username: d151313f1028978
-          password: ${{ secrets.secret }}
-          protocol: ftps
-          port: 21
-          local-dir: ./
-          server-dir: /htdocs/testpage/
