@@ -451,21 +451,24 @@
     const toggleThemeBtn = document.getElementById('toggleThemeBtn');
     const mainActionBtn = document.getElementById('mainActionBtn');
     const orbWrap = document.querySelector('.orb-wrap');
+    const shell = document.querySelector('.shell');
 
-    demoBtn.addEventListener('click', () => {
-      demoPanel.classList.toggle('hidden');
-      demoPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    });
-
-    mainActionBtn.addEventListener('click', () => {
+    function triggerPortal() {
       document.body.classList.add('portal-mode');
-      const shell = document.querySelector('.shell');
       shell.style.opacity = '0.2';
       shell.style.transform = 'scale(0.96)';
       orbWrap.style.position = 'fixed';
       orbWrap.style.left = '50%';
       orbWrap.style.top = '50%';
       orbWrap.style.transform = 'translate(-50%, -50%)';
+
+      document.documentElement.style.setProperty('--bg1', '#080b18');
+      document.documentElement.style.setProperty('--bg2', '#0f172a');
+      document.documentElement.style.setProperty('--bg3', '#312e81');
+      document.documentElement.style.setProperty('--cyan', '#67e8f9');
+      document.documentElement.style.setProperty('--pink', '#f9a8d4');
+      document.documentElement.style.setProperty('--violet', '#a78bfa');
+
       setTimeout(() => {
         document.body.classList.remove('portal-mode');
         shell.style.opacity = '1';
@@ -475,19 +478,21 @@
         orbWrap.style.top = 'auto';
         orbWrap.style.transform = 'none';
       }, 10000);
+    }
+
+    demoBtn.addEventListener('click', () => {
+      demoPanel.classList.toggle('hidden');
+      demoPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
 
-    toggleThemeBtn.addEventListener('click', () => {
-      document.documentElement.style.setProperty('--bg1', '#0b1020');
-      document.documentElement.style.setProperty('--bg2', '#111827');
-      document.documentElement.style.setProperty('--bg3', '#312e81');
-      document.documentElement.style.setProperty('--cyan', '#67e8f9');
-      document.documentElement.style.setProperty('--pink', '#f9a8d4');
-      document.documentElement.style.setProperty('--violet', '#a78bfa');
-      toggleThemeBtn.textContent = 'Activated';
-      setTimeout(() => {
-        toggleThemeBtn.textContent = 'Enter';
-      }, 1200);
+    [mainActionBtn, toggleThemeBtn].forEach((button) => {
+      button.addEventListener('click', () => {
+        triggerPortal();
+        button.textContent = 'Activated';
+        setTimeout(() => {
+          button.textContent = button === toggleThemeBtn ? 'Enter' : 'Enter the void';
+        }, 1200);
+      });
     });
   </script>
 </body>
