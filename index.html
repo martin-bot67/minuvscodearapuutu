@@ -289,11 +289,51 @@
       animation: pulse 6s ease-in-out infinite;
     }
 
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.06); }
+    body.portal-mode {
+      animation: hueCycle 10s linear infinite;
     }
 
+    body.portal-mode .shell {
+      opacity: 0.4;
+      transform: scale(0.96);
+      transition: all 0.8s ease;
+    }
+
+    body.portal-mode .orb-wrap {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      width: min(56vmin, 520px);
+      height: min(56vmin, 520px);
+      transform: translate(-50%, -50%);
+      z-index: 20;
+      transition: all 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    body.portal-mode .orb {
+      width: min(56vmin, 500px);
+      height: min(56vmin, 500px);
+      animation: pulse 1.2s ease-in-out infinite, portalSpin 2s linear infinite;
+      box-shadow:
+        0 0 80px rgba(34, 211, 238, 0.5),
+        0 0 140px rgba(139, 92, 246, 0.45),
+        0 0 200px rgba(244, 114, 182, 0.28),
+        inset 0 0 70px rgba(255,255,255,0.2);
+      filter: saturate(1.5) brightness(1.25);
+    }
+
+    @keyframes portalSpin {
+      from { transform: rotate(0deg) scale(1); }
+      to { transform: rotate(360deg) scale(1.08); }
+    }
+
+    @keyframes hueCycle {
+      0% { filter: hue-rotate(0deg) saturate(1); }
+      25% { filter: hue-rotate(80deg) saturate(1.2); }
+      50% { filter: hue-rotate(180deg) saturate(1.45); }
+      75% { filter: hue-rotate(260deg) saturate(1.3); }
+      100% { filter: hue-rotate(360deg) saturate(1); }
+    }
     .ring,
     .ring-two,
     .ring-three {
@@ -410,6 +450,7 @@
     const demoPanel = document.getElementById('demoPanel');
     const toggleThemeBtn = document.getElementById('toggleThemeBtn');
     const mainActionBtn = document.getElementById('mainActionBtn');
+    const orbWrap = document.querySelector('.orb-wrap');
 
     demoBtn.addEventListener('click', () => {
       demoPanel.classList.toggle('hidden');
@@ -417,11 +458,23 @@
     });
 
     mainActionBtn.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      document.body.style.filter = 'hue-rotate(90deg) saturate(1.2)';
+      document.body.classList.add('portal-mode');
+      const shell = document.querySelector('.shell');
+      shell.style.opacity = '0.2';
+      shell.style.transform = 'scale(0.96)';
+      orbWrap.style.position = 'fixed';
+      orbWrap.style.left = '50%';
+      orbWrap.style.top = '50%';
+      orbWrap.style.transform = 'translate(-50%, -50%)';
       setTimeout(() => {
-        document.body.style.filter = 'none';
-      }, 600);
+        document.body.classList.remove('portal-mode');
+        shell.style.opacity = '1';
+        shell.style.transform = 'scale(1)';
+        orbWrap.style.position = 'relative';
+        orbWrap.style.left = 'auto';
+        orbWrap.style.top = 'auto';
+        orbWrap.style.transform = 'none';
+      }, 10000);
     });
 
     toggleThemeBtn.addEventListener('click', () => {
