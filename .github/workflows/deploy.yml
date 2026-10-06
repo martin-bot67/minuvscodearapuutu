@@ -22,7 +22,7 @@ jobs:
       - name: Set deployment target
         shell: bash
         env:
-          STAGING_TARGET_DIR: ${{ secrets.STAGING_TARGET_DIR || '/data01/virt150872...nid/www.wrongs.eu/test.wrongs.eu/' }}
+          STAGING_TARGET_DIR: ${{ secrets.STAGING_TARGET_DIR || '/data01/virt150872/domeenid/www.wrongs.eu/testt/' }}
         run: |
           if [[ "${GITHUB_REF_NAME}" == "staging" || "${{ github.event_name }}" == "pull_request" ]]; then
             TARGET_DIR="${STAGING_TARGET_DIR}"
