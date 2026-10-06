@@ -21,14 +21,12 @@ jobs:
 
       - name: Set deployment target
         shell: bash
-        env:
-          STAGING_TARGET_DIR: ${{ secrets.STAGING_TARGET_DIR || '/data01/virt150872/domeenid/www.wrongs.eu/testt/' }}
         run: |
           if [[ "${GITHUB_REF_NAME}" == "staging" || "${{ github.event_name }}" == "pull_request" ]]; then
-            TARGET_DIR="${STAGING_TARGET_DIR}"
+            TARGET_DIR="${{ secrets.STAGING_TARGET_DIR || './testt/' }}"
             echo "Deploying to staging/test environment: ${TARGET_DIR}"
           else
-            TARGET_DIR="/htdocs/"
+            TARGET_DIR="./"
             echo "Deploying to production environment: ${TARGET_DIR}"
           fi
           echo "TARGET_DIR=${TARGET_DIR}" >> "$GITHUB_ENV"
