@@ -26,7 +26,7 @@ jobs:
             TARGET_DIR="${{ secrets.STAGING_TARGET_DIR || './testt/' }}"
             echo "Deploying to staging/test environment: ${TARGET_DIR}"
           else
-            TARGET_DIR="./"
+            TARGET_DIR="./htdocs/"
             echo "Deploying to production environment: ${TARGET_DIR}"
           fi
           echo "TARGET_DIR=${TARGET_DIR}" >> "$GITHUB_ENV"
