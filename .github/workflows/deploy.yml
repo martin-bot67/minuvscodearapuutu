@@ -4,15 +4,34 @@ on:
   push:
     branches:
       - main
+      - staging
+  pull_request:
+    branches:
+      - staging
 
 jobs:
   deploy:
     name: Build and Sync
     runs-on: ubuntu-latest
+    environment: ${{ (github.event_name == 'pull_request' || github.ref_name == 'staging') && 'staging' || 'production' }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Set deployment target
+        shell: bash
+        env:
+          STAGING_TARGET_DIR: ${{ secrets.STAGING_TARGET_DIR || '/data01/virt150872...nid/www.wrongs.eu/test.wrongs.eu/' }}
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "staging" || "${{ github.event_name }}" == "pull_request" ]]; then
+            TARGET_DIR="${STAGING_TARGET_DIR}"
+            echo "Deploying to staging/test environment: ${TARGET_DIR}"
+          else
+            TARGET_DIR="/htdocs/"
+            echo "Deploying to production environment: ${TARGET_DIR}"
+          fi
+          echo "TARGET_DIR=${TARGET_DIR}" >> "$GITHUB_ENV"
 
       - name: FTPS Deploy to Zone
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -23,4 +42,4 @@ jobs:
           protocol: ftps
           port: 21
           local-dir: ./
-          server-dir: /htdocs/
+          server-dir: ${{ env.TARGET_DIR }}
