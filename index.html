@@ -219,48 +219,119 @@ box.addEventListener('pointerdown',react);
 box.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();react()}});
 
 /* live leaderboard (Firebase Realtime Database over REST + streaming) */
-const DB_URL=''; // e.g. 'https://your-project-default-rtdb.europe-west1.firebasedatabase.app'
+const DB_URL='https://leaderboard-8280d-default-rtdb.firebaseio.com/'; // e.g. 'https://your-project-default-rtdb.europe-west1.firebasedatabase.app'
+const STORAGE_KEY='mindlab-leaderboard';
 let scores={},myName='';
 const rowsEl=document.getElementById('rows'),dot=document.getElementById('dot'),statusEl=document.getElementById('status');
+
+function normalizeScores(raw){
+  if(!raw||typeof raw!=='object')return {};
+  const next={};
+  for(const [key,val] of Object.entries(raw)){
+    if(!val||typeof val!=='object')continue;
+    const name=typeof val.name==='string'?val.name.trim():'';
+    const ms=Number(val.ms);
+    if(!name||!Number.isFinite(ms))continue;
+    next[key]={name,ms,t:Number(val.t)||Date.now()};
+  }
+  return next;
+}
+
+function loadLocalScores(){
+  try{
+    const saved=localStorage.getItem(STORAGE_KEY);
+    return normalizeScores(saved?JSON.parse(saved):{});
+  }catch(_){
+    return {};
+  }
+}
+
+function saveLocalScores(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(scores));}catch(_){ }
+}
+
 function render(){
 const list=Object.values(scores).filter(x=>x&&typeof x.ms==='number'&&typeof x.name==='string').sort((a,b)=>a.ms-b.ms).slice(0,10);
 if(!list.length){rowsEl.innerHTML='<li class="empty">No scores yet. Be the first.</li>';return}
 rowsEl.replaceChildren(...list.map((x,i)=>{
-const li=document.createElement('li');if(x.name.toLowerCase()===myName.toLowerCase())li.className='me';
+const li=document.createElement('li');
+if(x.name.toLowerCase()===myName.toLowerCase())li.className='me';
 for(const [cls,txt] of [['rank',i+1],['',x.name],['',x.ms+' ms']]){const sp=document.createElement('span');if(cls)sp.className=cls;sp.textContent=txt;li.append(sp)}
 return li}));
 }
+
 function setAt(path,val){
 const p=path.split('/').filter(Boolean);
-if(!p.length){scores=val||{};return}
+if(!p.length){scores=normalizeScores(val||{});return}
 let o=scores;for(let i=0;i<p.length-1;i++){if(typeof o[p[i]]!=='object'||o[p[i]]===null)o[p[i]]={};o=o[p[i]]}
 if(val===null)delete o[p[p.length-1]];else o[p[p.length-1]]=val;
 }
+
+function handleFirebaseEvent(event){
+  try{
+    const payload=JSON.parse(event.data);
+    const path=payload&&typeof payload.path==='string'?payload.path:'/scores';
+    const data=payload&&payload.data ? payload.data : {};
+    if(path==='/'||path==='/scores'){scores=normalizeScores(data);render();return}
+    const parentPath=path.replace(/\/$/, '');
+    if(data&&typeof data==='object'&&!Array.isArray(data)){
+      for(const key of Object.keys(data)){
+        const childPath=parentPath+'/'+key;
+        const childValue=data[key];
+        if(childValue&&typeof childValue==='object'&&typeof childValue.ms==='number'&&typeof childValue.name==='string'){
+          setAt(childPath,childValue);
+        }
+      }
+    }else{
+      setAt(path,data);
+    }
+    render();
+  }catch(_){ }
+}
+
 function connect(){
-if(!DB_URL){statusEl.textContent='Not connected';rowsEl.innerHTML='<li class="empty">Add your Firebase URL in the script to turn the leaderboard on.</li>';return}
-const es=new EventSource(DB_URL+'/scores.json');
-const handle=patch=>e=>{try{const {path,data}=JSON.parse(e.data);
-if(patch){for(const k in data)setAt(path.replace(/\/$/,'')+'/'+k,data[k])}else setAt(path,data);render()}catch(_){}};
-es.addEventListener('put',handle(false));es.addEventListener('patch',handle(true));
-es.onopen=()=>{dot.classList.add('live');statusEl.textContent='Live'};
-es.onerror=()=>{dot.classList.remove('live');statusEl.textContent='Reconnecting…'};
+ if(!DB_URL){
+  scores=loadLocalScores();
+  render();
+  dot.classList.add('live');
+  statusEl.textContent='Local leaderboard';
+  return;
+ }
+ const loadInitial=fetch(DB_URL+'/scores.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
+ loadInitial.then(data=>{scores=normalizeScores(data);render();}).catch(()=>{});
+ const es=new EventSource(DB_URL+'/scores.json');
+ es.addEventListener('put',handleFirebaseEvent);
+ es.addEventListener('patch',handleFirebaseEvent);
+ es.onopen=()=>{dot.classList.add('live');statusEl.textContent='Live'};
+ es.onerror=()=>{dot.classList.remove('live');statusEl.textContent='Reconnecting…'};
 }
 connect();
+
 saveForm.addEventListener('submit',async e=>{
-e.preventDefault();
-const name=uname.value.trim();
-if(!/^[A-Za-z0-9_-]{3,16}$/.test(name)){saveMsg.textContent='Username: 3–16 letters, numbers, _ or -.';return}
-if(!DB_URL){saveMsg.textContent='Leaderboard is not connected yet.';return}
-if(lastMs===null)return;
-const url=DB_URL+'/scores/'+name.toLowerCase()+'.json';
-try{
-const cur=await (await fetch(url)).json();
-if(cur&&typeof cur.ms==='number'&&cur.ms<=lastMs){saveMsg.textContent='You already have a faster time ('+cur.ms+' ms).';return}
-const res=await fetch(url,{method:'PUT',body:JSON.stringify({name,ms:lastMs,t:Date.now()})});
-if(!res.ok)throw new Error();
-myName=name;try{localStorage.setItem('mindlab-name',name)}catch(_){}
-saveMsg.textContent='Saved as '+name+'.';saveForm.classList.remove('show');render();
-}catch(_){saveMsg.textContent='Could not save. Try again.'}
+ e.preventDefault();
+ const name=uname.value.trim();
+ if(!/^[A-Za-z0-9_-]{3,16}$/.test(name)){saveMsg.textContent='Username: 3–16 letters, numbers, _ or -.';return}
+ if(lastMs===null)return;
+ myName=name;try{localStorage.setItem('mindlab-name',name)}catch(_){ }
+
+ if(!DB_URL){
+  const existing=loadLocalScores();
+  const key=name.toLowerCase();
+  const current=existing[key];
+  if(current&&typeof current.ms==='number'&&current.ms<=lastMs){saveMsg.textContent='You already have a faster time ('+current.ms+' ms).';return}
+  existing[key]={name,ms:lastMs,t:Date.now()};
+  scores=existing;saveLocalScores();
+  saveMsg.textContent='Saved as '+name+'.';saveForm.classList.remove('show');render();
+  return;
+ }
+ const url=DB_URL+'/scores/'+name.toLowerCase()+'.json';
+ try{
+  const cur=await (await fetch(url)).json();
+  if(cur&&typeof cur.ms==='number'&&cur.ms<=lastMs){saveMsg.textContent='You already have a faster time ('+cur.ms+' ms).';return}
+  const res=await fetch(url,{method:'PUT',body:JSON.stringify({name,ms:lastMs,t:Date.now()})});
+  if(!res.ok)throw new Error();
+  saveMsg.textContent='Saved as '+name+'.';saveForm.classList.remove('show');render();
+ }catch(_){saveMsg.textContent='Could not save. Try again.'}
 });
 myName=uname.value;
 
