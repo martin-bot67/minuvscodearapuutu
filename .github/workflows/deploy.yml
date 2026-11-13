@@ -38,6 +38,7 @@ jobs:
           username: d151313f1028978
           password: ${{ secrets.secret }}
           protocol: ftps
+          security: loose
           port: 21
           local-dir: ./
-          server-dir: ${{ env.TARGET_DIR }}
+          server-dir: /htdocs/
