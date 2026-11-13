@@ -1,499 +1,287 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VOIDLAB</title>
-  <style>
-    :root {
-      --bg1: #040b16;
-      --bg2: #0f172a;
-      --bg3: #1d4ed8;
-      --violet: #8b5cf6;
-      --cyan: #22d3ee;
-      --pink: #f472b6;
-      --gold: #facc15;
-      --text: #edf6ff;
-      --muted: #bfd3eb;
-      --glass: rgba(15, 23, 42, 0.6);
-      --line: rgba(255,255,255,0.1);
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mindlab – Train your mind</title>
+<meta name="color-scheme" content="dark">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;800&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#000;--panel:#08080a;--line:#212127;--text:#f2f2f4;--dim:#85858f;--accent:#8c9cff;
+--display:'Syne','Helvetica Neue',Arial,sans-serif;--body:'Instrument Sans','Helvetica Neue',Arial,sans-serif}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth;color-scheme:dark}
+body{background:var(--bg);color:var(--text);font:400 17px/1.6 var(--body);overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.wrap{max-width:900px;margin:0 auto;padding:0 24px}
 
-    * { box-sizing: border-box; }
+#glow{position:fixed;width:380px;height:380px;border-radius:50%;pointer-events:none;z-index:0;
+background:radial-gradient(circle,rgba(140,156,255,.09),transparent 65%);transform:translate(-50%,-50%);left:-999px;top:-999px}
 
-    html, body {
-      margin: 0;
-      min-height: 100%;
-      font-family: Arial, Helvetica, sans-serif;
-      background:
-        radial-gradient(circle at 15% 15%, rgba(34, 211, 238, 0.18), transparent 18%),
-        radial-gradient(circle at 80% 10%, rgba(244, 114, 182, 0.18), transparent 20%),
-        radial-gradient(circle at 50% 80%, rgba(139, 92, 246, 0.18), transparent 25%),
-        linear-gradient(135deg, var(--bg1), var(--bg2), #111827 60%, var(--bg3));
-      color: var(--text);
-    }
+nav{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:22px 32px;background:linear-gradient(#000,rgba(0,0,0,0))}
+.logo{font:800 21px var(--display);letter-spacing:-.02em}
+nav ul{display:flex;gap:28px;list-style:none;padding:0}
+nav a{color:var(--dim);font-size:15px;transition:color .2s}
+nav a:hover{color:var(--text)}
 
-    body {
-      padding: 24px;
-      overflow-x: hidden;
-    }
+.hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center}
+#net{position:absolute;inset:0;width:100%;height:100%}
+.hero-inner{position:relative;z-index:1;padding:0 24px;pointer-events:none}
+.hero-inner a{pointer-events:auto}
+h1{font:800 clamp(42px,8vw,96px)/.98 var(--display);letter-spacing:-.04em;margin-bottom:22px}
+.hero p{color:var(--dim);max-width:40ch;margin:0 auto 32px;font-size:18px}
+.btn{display:inline-block;padding:14px 28px;border:1px solid var(--text);border-radius:999px;font-weight:500;background:var(--text);color:#000;
+transition:background .2s,color .2s;cursor:pointer;font-family:inherit;font-size:16px}
+.btn:hover{background:transparent;color:var(--text)}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--text)}
 
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
-      background-size: 28px 28px;
-      mask-image: radial-gradient(circle at center, rgba(0,0,0,1), rgba(0,0,0,0.2));
-    }
+section{position:relative;z-index:1;padding:110px 0}
+h2{font:800 clamp(30px,4.5vw,46px)/1.05 var(--display);letter-spacing:-.03em;margin-bottom:12px}
+.lead{color:var(--dim);max-width:48ch;margin-bottom:40px}
 
-    .shell {
-      max-width: 1500px;
-      margin: 0 auto;
-      background: rgba(8, 15, 28, 0.5);
-      border: 1px solid var(--line);
-      border-radius: 30px;
-      box-shadow: 0 25px 80px rgba(0,0,0,0.45);
-      backdrop-filter: blur(10px);
-      overflow: hidden;
-    }
+.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.tool{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:26px;min-height:320px;display:flex;flex-direction:column;transition:border-color .3s}
+.tool:hover{border-color:#3a3a46}
+.tool h3{font:600 20px var(--display)}
+.tool small{color:var(--dim);display:block;margin-bottom:18px}
+.stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
 
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 22px 28px;
-      border-bottom: 1px solid var(--line);
-    }
+#react-box{width:100%;flex:1;border-radius:14px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center;padding:14px;cursor:pointer;user-select:none;transition:background .1s}
+#react-box.wait{background:#160a0d;border-color:#40181f}
+#react-box.go{background:var(--accent);color:#000;border-color:var(--accent);font-weight:500}
+.best{color:var(--dim);font-size:14px;margin-top:12px}
+#orb{width:90px;height:90px;border-radius:50%;border:1px solid var(--accent);background:radial-gradient(circle,rgba(140,156,255,.4),rgba(140,156,255,.04) 70%);transition:transform 4s ease-in-out}
+#orb-label{min-height:26px}
 
-    .brand {
-      font-size: 1.4rem;
-      font-weight: 900;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      background: linear-gradient(90deg, var(--cyan), var(--pink), var(--gold));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
+.prog{border-top:1px solid var(--line)}
+.prog:last-child{border-bottom:1px solid var(--line)}
+.prog summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:24px 4px;font:600 clamp(20px,3vw,28px) var(--display);letter-spacing:-.02em;transition:padding-left .3s,color .3s}
+.prog summary::-webkit-details-marker{display:none}
+.prog summary::after{content:'+';font-size:28px;color:var(--dim);transition:transform .3s}
+.prog[open] summary::after{transform:rotate(45deg);color:var(--accent)}
+.prog summary:hover{padding-left:14px;color:var(--accent)}
+.prog p{color:var(--dim);padding:0 4px 26px;max-width:56ch}
 
-    .nav {
-      display: flex;
-      gap: 18px;
-      align-items: center;
-      flex-wrap: wrap;
-      color: var(--muted);
-      font-size: 0.78rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-    }
-
-    .nav span {
-      opacity: 0.8;
-    }
-
-    .nav button {
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 999px;
-      background: rgba(255,255,255,0.02);
-      color: white;
-      padding: 10px 18px;
-      font-size: 0.72rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      cursor: pointer;
-    }
-
-    .hero {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 32px;
-      align-items: center;
-      padding: 48px 28px 28px;
-    }
-
-    .copy {
-      padding-left: 12px;
-    }
-
-    .eyebrow {
-      display: inline-block;
-      padding: 10px 16px;
-      border: 1px solid rgba(34, 211, 238, 0.4);
-      border-radius: 999px;
-      background: rgba(34, 211, 238, 0.08);
-      color: var(--cyan);
-      font-size: 0.75rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      margin-bottom: 22px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(4rem, 8vw, 9rem);
-      line-height: 0.8;
-      letter-spacing: -0.08em;
-      text-transform: uppercase;
-    }
-
-    .high {
-      display: block;
-      background: linear-gradient(90deg, var(--text), var(--cyan), var(--pink));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-
-    .low {
-      display: block;
-      color: #dce8ff;
-      text-shadow: 0 0 35px rgba(34, 211, 238, 0.25);
-    }
-
-    .subtitle {
-      margin-top: 26px;
-      color: var(--muted);
-      font-size: clamp(1.05rem, 1.6vw, 1.65rem);
-      line-height: 1.6;
-      max-width: 700px;
-    }
-
-    .cta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      margin-top: 30px;
-    }
-
-    .primary,
-    .secondary {
-      border: none;
-      border-radius: 16px;
-      padding: 18px 24px;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-weight: 900;
-      cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .primary {
-      background: linear-gradient(135deg, var(--cyan), var(--pink), var(--violet));
-      color: #03111b;
-      box-shadow: 0 18px 50px rgba(34, 211, 238, 0.35);
-    }
-
-    .secondary {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.14);
-      color: var(--text);
-    }
-
-    .primary:hover,
-    .secondary:hover {
-      transform: translateY(-2px);
-    }
-
-    .demo-panel {
-      margin-top: 22px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.03);
-      border-radius: 18px;
-      padding: 18px 20px;
-      color: var(--muted);
-      transition: opacity 0.25s ease, transform 0.25s ease;
-    }
-
-    .demo-panel.hidden {
-      display: none;
-    }
-
-    .demo-panel h3 {
-      margin: 0 0 10px;
-      color: var(--text);
-      font-size: 0.9rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-
-    .demo-panel ul {
-      margin: 0;
-      padding-left: 18px;
-      line-height: 1.9;
-    }
-
-    .demo-panel li::marker {
-      color: var(--cyan);
-    }
-
-    .stats {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 18px;
-      margin-top: 36px;
-    }
-
-    .stat {
-      min-width: 140px;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: rgba(255,255,255,0.03);
-      padding: 16px 18px;
-    }
-
-    .stat strong {
-      display: block;
-      font-size: clamp(1.5rem, 2vw, 2.2rem);
-      margin-bottom: 5px;
-    }
-
-    .stat span {
-      color: var(--muted);
-      font-size: 0.74rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-
-    .visual {
-      display: grid;
-      place-items: center;
-      padding: 14px;
-      position: relative;
-    }
-
-    .orb-wrap {
-      position: relative;
-      width: min(520px, 100%);
-      aspect-ratio: 1;
-      display: grid;
-      place-items: center;
-    }
-
-    .orb {
-      width: min(76vw, 420px);
-      height: min(76vw, 420px);
-      border-radius: 50%;
-      background:
-        radial-gradient(circle at 30% 25%, rgba(255,255,255,0.95), rgba(34, 211, 238, 0.28) 16%, rgba(139, 92, 246, 0.7) 38%, rgba(10, 12, 28, 0.8) 68%);
-      box-shadow:
-        0 0 60px rgba(34, 211, 238, 0.25),
-        0 0 100px rgba(139, 92, 246, 0.25),
-        inset 0 0 50px rgba(255,255,255,0.15);
-      border: 1px solid rgba(255,255,255,0.12);
-      position: relative;
-      animation: pulse 6s ease-in-out infinite;
-    }
-
-    body.portal-mode {
-      animation: hueCycle 10s linear infinite;
-    }
-
-    body.portal-mode .shell {
-      opacity: 0.4;
-      transform: scale(0.96);
-      transition: all 0.8s ease;
-    }
-
-    body.portal-mode .orb-wrap {
-      position: fixed;
-      left: 50%;
-      top: 50%;
-      width: min(56vmin, 520px);
-      height: min(56vmin, 520px);
-      transform: translate(-50%, -50%);
-      z-index: 20;
-      transition: all 1s cubic-bezier(0.2, 0.8, 0.2, 1);
-    }
-
-    body.portal-mode .orb {
-      width: min(56vmin, 500px);
-      height: min(56vmin, 500px);
-      animation: pulse 1.2s ease-in-out infinite, portalSpin 2s linear infinite;
-      box-shadow:
-        0 0 80px rgba(34, 211, 238, 0.5),
-        0 0 140px rgba(139, 92, 246, 0.45),
-        0 0 200px rgba(244, 114, 182, 0.28),
-        inset 0 0 70px rgba(255,255,255,0.2);
-      filter: none;
-    }
-
-    @keyframes portalSpin {
-      from { transform: rotate(0deg) scale(1); }
-      to { transform: rotate(360deg) scale(1.08); }
-    }
-
-    @keyframes hueCycle {
-      0% { filter: hue-rotate(0deg) saturate(1); }
-      25% { filter: hue-rotate(80deg) saturate(1.2); }
-      50% { filter: hue-rotate(180deg) saturate(1.45); }
-      75% { filter: hue-rotate(260deg) saturate(1.3); }
-      100% { filter: hue-rotate(360deg) saturate(1); }
-    }
-    .ring,
-    .ring-two,
-    .ring-three {
-      position: absolute;
-      border: 1px solid rgba(34, 211, 238, 0.34);
-      border-radius: 50%;
-    }
-
-    .ring { width: 105%; height: 105%; }
-    .ring-two { width: 118%; height: 118%; border-color: rgba(244, 114, 182, 0.35); }
-    .ring-three { width: 132%; height: 132%; border-color: rgba(139, 92, 246, 0.35); }
-
-    .float-card {
-      position: absolute;
-      background: rgba(12, 17, 29, 0.8);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 18px;
-      padding: 14px 18px;
-      color: var(--muted);
-      box-shadow: 0 12px 30px rgba(0,0,0,0.28);
-      font-size: 0.8rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      backdrop-filter: blur(8px);
-    }
-
-    .card-a { top: 10%; left: 2%; }
-    .card-b { right: 0; top: 18%; }
-    .card-c { bottom: 6%; left: 12%; }
-
-    @media (max-width: 980px) {
-      .hero {
-        grid-template-columns: 1fr;
-      }
-
-      .visual {
-        order: -1;
-      }
-    }
-  </style>
+.signup{text-align:center}
+form{display:flex;gap:10px;max-width:440px;margin:28px auto 0;flex-wrap:wrap;justify-content:center}
+input{flex:1;min-width:200px;padding:14px 20px;background:var(--panel);border:1px solid var(--line);border-radius:999px;color:var(--text);font:inherit}
+input:focus{outline:none;border-color:var(--accent)}
+#msg{margin-top:14px;color:var(--accent);min-height:26px}
+footer{padding:36px 24px;text-align:center;color:var(--dim);font-size:14px;border-top:1px solid var(--line);position:relative;z-index:1}
+#save{display:none;gap:8px;margin-top:12px}
+#save.show{display:flex}
+#save input{min-width:0;padding:10px 16px;font-size:15px}
+#save button{padding:10px 18px;font-size:15px}
+#save-msg{color:var(--dim);font-size:14px;min-height:22px;margin-top:8px}
+.board{grid-column:1/-1;min-height:0}
+.board-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.live-tag{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:14px}
+.dot{width:8px;height:8px;border-radius:50%;background:#444}
+.dot.live{background:var(--accent);box-shadow:0 0 10px var(--accent)}
+#rows{list-style:none;padding:0}
+#rows li{display:grid;grid-template-columns:36px 1fr auto;padding:12px 4px;border-top:1px solid var(--line)}
+#rows li.me{color:var(--accent)}
+#rows .rank{color:var(--dim)}
+#rows .empty{display:block;color:var(--dim)}
+@media (max-width:640px){nav ul{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}html{scroll-behavior:auto}}
+</style>
 </head>
 <body>
-  <div class="shell">
-    <div class="topbar">
-      <div class="brand">TIMO</div>
-      <div class="nav">
-        <span>Systems</span>
-        <span>Vision</span>
-        <span>Launch</span>
-        <button id="toggleThemeBtn">Enter</button>
-      </div>
-    </div>
+<div id="glow"></div>
 
-    <div class="hero">
-      <div class="copy">
-        <div class="eyebrow">Future-ready</div>
-        <h1>
-          <span class="high">Create</span>
-          <span class="low">The Timo</span>
-        </h1>
+<nav>
+<a href="#top" class="logo">Mindlab</a>
+<ul><li><a href="#try">Try it</a></li><li><a href="#programs">Programs</a></li><li><a href="#join">Join</a></li></ul>
+</nav>
 
-        <p class="subtitle">
-          We design brutal digital experiences, build absurdly fast ideas, and launch brands
-          that feel like the future before the future arrives.
-        </p>
+<header class="hero" id="top">
+<canvas id="net" aria-hidden="true"></canvas>
+<div class="hero-inner">
+<h1>Train your mind.</h1>
+<p>Short exercises for focus, calm and clear thinking. Move your cursor.</p>
+<a class="btn" href="#try">Try an exercise</a>
+</div>
+</header>
 
-        <div class="cta">
-          <button class="primary" id="mainActionBtn">Enter the void</button>
-          <button class="secondary" id="demoBtn">Watch demo</button>
-        </div>
+<section id="try">
+<div class="wrap">
+<h2>Two minutes. Two tools.</h2>
+<p class="lead">Test how sharp you are, then slow down.</p>
+<div class="tools">
+<div class="tool">
+<h3>Reaction test</h3><small>Click when the box turns blue.</small>
+<div id="react-box" tabindex="0" role="button">Click to start</div>
+<div class="best" id="best">Best: –</div>
+<form id="save" autocomplete="off">
+<input id="uname" placeholder="Username" maxlength="16" aria-label="Username" required>
+<button class="btn" type="submit">Save score</button>
+</form>
+<div id="save-msg" aria-live="polite"></div>
+</div>
+<div class="tool">
+<h3>Breathing pacer</h3><small>In 4s, hold 4s, out 6s.</small>
+<div class="stage">
+<div id="orb"></div>
+<div id="orb-label" aria-live="polite">Ready</div>
+<button class="btn ghost" id="breathe-btn">Start</button>
+</div>
+</div>
+</div>
+<div class="tool board">
+<div class="board-head"><h3>Leaderboard</h3><span class="live-tag"><span class="dot" id="dot"></span><span id="status">Connecting…</span></span></div>
+<ol id="rows"><li class="empty">Loading…</li></ol>
+</div>
+</div>
+</div>
+</section>
 
-        <div class="demo-panel hidden" id="demoPanel">
-          <h3>Demo stack</h3>
-          <ul>
-            <li>Rapid product concepting</li>
-            <li>Launch-ready design systems</li>
-            <li>High-velocity brand execution</li>
-          </ul>
-        </div>
+<section id="programs">
+<div class="wrap">
+<h2>Programs</h2>
+<p class="lead">Open one to see what's inside.</p>
+<details class="prog"><summary>Focus</summary><p>Ten-minute daily drills for attention: single-task sessions, distraction logging and a weekly review.</p></details>
+<details class="prog"><summary>Calm</summary><p>Breathing, body scans and short resets you can do at your desk.</p></details>
+<details class="prog"><summary>Memory</summary><p>Spaced recall, memory palace practice and pattern games.</p></details>
+</div>
+</section>
 
-        <div class="stats">
-          <div class="stat">
-            <strong>24/7</strong>
-            <span>Online</span>
-          </div>
-          <div class="stat">
-            <strong>3.2M</strong>
-            <span>Signals</span>
-          </div>
-          <div class="stat">
-            <strong>12x</strong>
-            <span>Faster</span>
-          </div>
-        </div>
-      </div>
+<section id="join" class="signup">
+<div class="wrap">
+<h2>Start this week.</h2>
+<p class="lead" style="margin:0 auto">One exercise in your inbox every Monday.</p>
+<form id="form">
+<input type="email" id="email" placeholder="you@email.com" aria-label="Email address" required>
+<button class="btn" type="submit">Join</button>
+</form>
+<div id="msg" aria-live="polite"></div>
+</div>
+</section>
 
-      <div class="visual">
-        <div class="orb-wrap">
-          <div class="ring"></div>
-          <div class="ring-two"></div>
-          <div class="ring-three"></div>
-          <div class="orb"></div>
+<footer>© 2026 Mindlab</footer>
 
-          <div class="float-card card-a">Neon systems</div>
-          <div class="float-card card-b">Launch mode</div>
-          <div class="float-card card-c">Custom build</div>
-        </div>
-      </div>
-    </div>
-  </div>
+<script>
+/* cursor glow */
+const glow=document.getElementById('glow');
+addEventListener('pointermove',e=>{glow.style.left=e.clientX+'px';glow.style.top=e.clientY+'px'});
 
-  <script>
-    const demoBtn = document.getElementById('demoBtn');
-    const demoPanel = document.getElementById('demoPanel');
-    const toggleThemeBtn = document.getElementById('toggleThemeBtn');
-    const mainActionBtn = document.getElementById('mainActionBtn');
-    const orbWrap = document.querySelector('.orb-wrap');
-    const shell = document.querySelector('.shell');
+/* network */
+const cv=document.getElementById('net'),cx=cv.getContext('2d');
+let W,H,pts=[],m={x:-999,y:-999};
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+function size(){
+const d=devicePixelRatio||1;W=cv.clientWidth;H=cv.clientHeight;cv.width=W*d;cv.height=H*d;cx.setTransform(d,0,0,d,0,0);
+pts=Array.from({length:Math.min(80,Math.floor(W*H/17000))},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35}));
+}
+addEventListener('resize',size);size();
+const hero=cv.parentElement;
+hero.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();m.x=e.clientX-r.left;m.y=e.clientY-r.top});
+hero.addEventListener('pointerleave',()=>{m.x=m.y=-999});
+hero.addEventListener('pointerdown',()=>{pts.forEach(p=>{const dx=p.x-m.x,dy=p.y-m.y,d=Math.hypot(dx,dy)||1;if(d<240){p.vx+=dx/d*3;p.vy+=dy/d*3}})});
+function draw(){
+cx.clearRect(0,0,W,H);
+for(const p of pts){
+p.x+=p.vx;p.y+=p.vy;p.vx*=.985;p.vy*=.985;
+if(Math.abs(p.vx)<.12)p.vx+=(Math.random()-.5)*.02;
+if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;
+const dm=Math.hypot(p.x-m.x,p.y-m.y);
+if(dm<150){p.vx+=(m.x-p.x)*.0004;p.vy+=(m.y-p.y)*.0004}
+cx.fillStyle=dm<150?'#8c9cff':'#55555f';cx.beginPath();cx.arc(p.x,p.y,dm<150?2.3:1.5,0,7);cx.fill();
+}
+for(let i=0;i<pts.length;i++){
+for(let j=i+1;j<pts.length;j++){
+const d=Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y);
+if(d<120){cx.strokeStyle=`rgba(140,156,255,${(1-d/120)*.28})`;cx.beginPath();cx.moveTo(pts[i].x,pts[i].y);cx.lineTo(pts[j].x,pts[j].y);cx.stroke()}
+}
+const d=Math.hypot(pts[i].x-m.x,pts[i].y-m.y);
+if(d<150){cx.strokeStyle=`rgba(242,242,244,${(1-d/150)*.55})`;cx.beginPath();cx.moveTo(pts[i].x,pts[i].y);cx.lineTo(m.x,m.y);cx.stroke()}
+}
+if(!reduce)requestAnimationFrame(draw);
+}
+draw();
 
-    function triggerPortal() {
-      document.body.classList.add('portal-mode');
-      shell.style.opacity = '0.2';
-      shell.style.transform = 'scale(0.96)';
-      orbWrap.style.position = 'fixed';
-      orbWrap.style.left = '50%';
-      orbWrap.style.top = '50%';
-      orbWrap.style.transform = 'translate(-50%, -50%)';
+/* reaction test */
+const box=document.getElementById('react-box'),bestEl=document.getElementById('best');
+const saveForm=document.getElementById('save'),saveMsg=document.getElementById('save-msg'),uname=document.getElementById('uname');
+let st='idle',tm,t0,best=null,lastMs=null;
+try{uname.value=localStorage.getItem('mindlab-name')||''}catch(e){}
+function react(){
+if(st==='idle'){st='wait';box.className='wait';box.textContent='Wait for blue…';saveForm.classList.remove('show');saveMsg.textContent='';
+tm=setTimeout(()=>{st='go';box.className='go';box.textContent='NOW!';t0=performance.now()},1200+Math.random()*2500)}
+else if(st==='wait'){clearTimeout(tm);st='idle';box.className='';box.textContent='Too early. Click to retry'}
+else{const ms=Math.round(performance.now()-t0);st='idle';box.className='';box.textContent=ms+' ms. Click to retry';
+lastMs=ms;saveForm.classList.add('show');saveMsg.textContent='Want it on the leaderboard? Pick a username.';
+if(best===null||ms<best){best=ms;bestEl.textContent='Best: '+best+' ms'}}
+}
+box.addEventListener('pointerdown',react);
+box.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();react()}});
 
-      document.documentElement.style.setProperty('--bg1', '#080b18');
-      document.documentElement.style.setProperty('--bg2', '#0f172a');
-      document.documentElement.style.setProperty('--bg3', '#312e81');
-      document.documentElement.style.setProperty('--cyan', '#67e8f9');
-      document.documentElement.style.setProperty('--pink', '#f9a8d4');
-      document.documentElement.style.setProperty('--violet', '#a78bfa');
+/* live leaderboard (Firebase Realtime Database over REST + streaming) */
+const DB_URL=''; // e.g. 'https://your-project-default-rtdb.europe-west1.firebasedatabase.app'
+let scores={},myName='';
+const rowsEl=document.getElementById('rows'),dot=document.getElementById('dot'),statusEl=document.getElementById('status');
+function render(){
+const list=Object.values(scores).filter(x=>x&&typeof x.ms==='number'&&typeof x.name==='string').sort((a,b)=>a.ms-b.ms).slice(0,10);
+if(!list.length){rowsEl.innerHTML='<li class="empty">No scores yet. Be the first.</li>';return}
+rowsEl.replaceChildren(...list.map((x,i)=>{
+const li=document.createElement('li');if(x.name.toLowerCase()===myName.toLowerCase())li.className='me';
+for(const [cls,txt] of [['rank',i+1],['',x.name],['',x.ms+' ms']]){const sp=document.createElement('span');if(cls)sp.className=cls;sp.textContent=txt;li.append(sp)}
+return li}));
+}
+function setAt(path,val){
+const p=path.split('/').filter(Boolean);
+if(!p.length){scores=val||{};return}
+let o=scores;for(let i=0;i<p.length-1;i++){if(typeof o[p[i]]!=='object'||o[p[i]]===null)o[p[i]]={};o=o[p[i]]}
+if(val===null)delete o[p[p.length-1]];else o[p[p.length-1]]=val;
+}
+function connect(){
+if(!DB_URL){statusEl.textContent='Not connected';rowsEl.innerHTML='<li class="empty">Add your Firebase URL in the script to turn the leaderboard on.</li>';return}
+const es=new EventSource(DB_URL+'/scores.json');
+const handle=patch=>e=>{try{const {path,data}=JSON.parse(e.data);
+if(patch){for(const k in data)setAt(path.replace(/\/$/,'')+'/'+k,data[k])}else setAt(path,data);render()}catch(_){}};
+es.addEventListener('put',handle(false));es.addEventListener('patch',handle(true));
+es.onopen=()=>{dot.classList.add('live');statusEl.textContent='Live'};
+es.onerror=()=>{dot.classList.remove('live');statusEl.textContent='Reconnecting…'};
+}
+connect();
+saveForm.addEventListener('submit',async e=>{
+e.preventDefault();
+const name=uname.value.trim();
+if(!/^[A-Za-z0-9_-]{3,16}$/.test(name)){saveMsg.textContent='Username: 3–16 letters, numbers, _ or -.';return}
+if(!DB_URL){saveMsg.textContent='Leaderboard is not connected yet.';return}
+if(lastMs===null)return;
+const url=DB_URL+'/scores/'+name.toLowerCase()+'.json';
+try{
+const cur=await (await fetch(url)).json();
+if(cur&&typeof cur.ms==='number'&&cur.ms<=lastMs){saveMsg.textContent='You already have a faster time ('+cur.ms+' ms).';return}
+const res=await fetch(url,{method:'PUT',body:JSON.stringify({name,ms:lastMs,t:Date.now()})});
+if(!res.ok)throw new Error();
+myName=name;try{localStorage.setItem('mindlab-name',name)}catch(_){}
+saveMsg.textContent='Saved as '+name+'.';saveForm.classList.remove('show');render();
+}catch(_){saveMsg.textContent='Could not save. Try again.'}
+});
+myName=uname.value;
 
-      setTimeout(() => {
-        document.body.classList.remove('portal-mode');
-        shell.style.opacity = '1';
-        shell.style.transform = 'scale(1)';
-        orbWrap.style.position = 'relative';
-        orbWrap.style.left = 'auto';
-        orbWrap.style.top = 'auto';
-        orbWrap.style.transform = 'none';
-      }, 10000);
-    }
+/* breathing */
+const orb=document.getElementById('orb'),lab=document.getElementById('orb-label'),bb=document.getElementById('breathe-btn');
+let on=false,ts=[];const ph=[['Breathe in',4,1.6],['Hold',4,1.6],['Breathe out',6,1]];
+function cyc(i=0){
+if(!on)return;const [t,s,k]=ph[i%3];
+lab.textContent=t;orb.style.transitionDuration=(t==='Hold'?0:s)+'s';orb.style.transform=`scale(${k})`;
+ts.push(setTimeout(()=>cyc(i+1),s*1000));
+}
+bb.addEventListener('click',()=>{
+on=!on;
+if(on){bb.textContent='Stop';cyc()}
+else{ts.forEach(clearTimeout);ts=[];bb.textContent='Start';lab.textContent='Ready';orb.style.transitionDuration='1s';orb.style.transform='scale(1)'}
+});
 
-    demoBtn.addEventListener('click', () => {
-      demoPanel.classList.toggle('hidden');
-      demoPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    });
-
-    [mainActionBtn, toggleThemeBtn].forEach((button) => {
-      button.addEventListener('click', () => {
-        triggerPortal();
-        button.textContent = 'Activated';
-        setTimeout(() => {
-          button.textContent = button === toggleThemeBtn ? 'Enter' : 'Enter the void';
-        }, 1200);
-      });
-    });
-  </script>
+/* signup demo: connect to your own backend */
+document.getElementById('form').addEventListener('submit',e=>{
+e.preventDefault();document.getElementById('msg').textContent="You're in. First exercise arrives Monday.";e.target.reset();
+});
+</script>
 </body>
 </html>
