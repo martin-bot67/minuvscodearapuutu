@@ -3,699 +3,314 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ASCII Figure — 3D Symbol Grid</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="theme-color" content="#000000" />
+  <title>Bloom</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&display=swap');
-
     :root {
       color-scheme: dark;
+      background: #000;
     }
 
+    * { box-sizing: border-box; }
+
     html, body {
-      margin: 0;
-      padding: 0;
       width: 100%;
       height: 100%;
-      background-color: #000000;
-      color: #f8fafc;
-      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      margin: 0;
       overflow: hidden;
+      background: #000;
     }
 
     canvas {
       display: block;
       width: 100%;
       height: 100%;
-      background-color: #000000;
-      touch-action: none;
-      cursor: grab;
-    }
-
-    canvas:active {
-      cursor: grabbing;
-    }
-
-    #figure-stage:fullscreen {
-      width: 100vw;
-      height: 100vh;
-      background-color: #000000;
+      background: #000;
     }
   </style>
 </head>
 <body>
-  <div id="figure-stage" class="relative w-screen h-screen bg-black flex flex-col items-center justify-between p-2 sm:p-4 overflow-hidden select-none">
-    <!-- Centered Canvas Viewport -->
-    <div id="canvas-wrap" class="relative flex-1 w-full max-w-[1900px] min-h-0 flex items-center justify-center mb-2">
-      <canvas id="figure-canvas"></canvas>
-    </div>
-
-    <!-- Bottom Control Bar: Spin/Pause + Fullscreen + Color Themes -->
-    <div class="z-10 flex flex-wrap items-center justify-center gap-2 bg-black/90 border border-neutral-800 rounded-xl px-3 py-2">
-      <button id="btn-spin" type="button" aria-pressed="true" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-neutral-900 hover:bg-neutral-800 text-white border border-neutral-700 transition cursor-pointer">
-        <span id="spin-label">Pause Spin</span>
-      </button>
-
-      <button id="btn-fullscreen" type="button" aria-pressed="false" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-neutral-900 hover:bg-neutral-800 text-white border border-neutral-700 transition cursor-pointer">
-        <span id="fs-label">Fullscreen</span>
-      </button>
-
-      <div class="h-4 w-px bg-neutral-800 mx-0.5"></div>
-
-      <button type="button" data-color="cyan" class="color-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-neutral-900 text-cyan-300 border border-neutral-800 hover:border-cyan-500/60 transition cursor-pointer">
-        Cyan
-      </button>
-      <button type="button" data-color="crimson" class="color-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-neutral-900 text-rose-300 border border-neutral-800 hover:border-rose-500/60 transition cursor-pointer">
-        Crimson
-      </button>
-      <button type="button" data-color="emerald" class="color-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-neutral-900 text-emerald-300 border border-neutral-800 hover:border-emerald-500/60 transition cursor-pointer">
-        Emerald
-      </button>
-      <button type="button" data-color="amber" class="color-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-neutral-900 text-amber-300 border border-neutral-800 hover:border-amber-500/60 transition cursor-pointer">
-        Amber
-      </button>
-      <button type="button" data-color="violet" class="color-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-neutral-900 text-violet-300 border border-neutral-800 hover:border-violet-500/60 transition cursor-pointer">
-        Violet
-      </button>
-    </div>
-  </div>
-
+  <canvas id="art" aria-label="A glowing ASCII flower slowly blooming in darkness"></canvas>
   <script>
-    (function () {
+    (() => {
       "use strict";
 
-      // =====================================================================
-      // 1. Source ASCII Artwork & Density Ramp
-      // =====================================================================
-      const RAW_ART = [
-        "                                                                  ;",
-        "                                                                 ;=",
-        "                                                                 .=;                    .X",
-        "                                                                  ...                   ;;.",
-        "                                                                  ; .;                  ;.=",
-        "                                            ==                    =. =                  . ;",
-        "                                 .           X=.                  ;.  =                 = ;.",
-        "                                 +           .;;;                 ..  .;               ..  .",
-        "                                 +.           ;..;                 .   =                   =",
-        "                                 X;           .; .=                =   .;              =   =.                 .",
-        "                                 =;;           ;. .+.              =    =              ;   .                 .=",
-        "                                 ; ;            =   =.             =     X            =     ;                ;;",
-        "                                 .;.;           ;.   ;.            =     ..           ;     =                ;;",
-        "                                  = =            ;    =.           =      ;          ;.     =               = ;",
-        "                                  + .=           =     =.          =      ;;         ;      .              .. ;",
-        "                                  ;  .;           =     =.         =       =        .;       .             = .;",
-        "                                  ;   =           =     .=         =       ;        ;       .;            .. ;=",
-        "                                  ;.   =          ;.      ;        .       .=       ;       .;            =  ;.",
-        "                                   =   .=         .=      .;      ..        ;      =        .+           ;   ;",
-        "                                   =    .;         ;       ;;     ..        ;.    .;        .X          ;.",
-        "                                   ;     ;.        =.       =     ;.        .;    ;.        .X         ;;    ;",
-        "                 .                 =.     .;       ..       .=    =.         +    =          =        .;     +",
-        "                  +.               ..      .;       ;        .    ;          +   ;.          ;       .=      =",
-        "                  .+.               =       .;      =         ;   ;          ;   =           +      ;.       .",
-        "                   ;;               +        .;     X         .;  ;           =  =          .X     ;.       =",
-        "                    ;...            ..        .+    ;          =  ;           X .           .+    =.        X",
-        "                     ; ..            =          +   .          .. ;           ; +           .;   ;.         ;",
-        "                     .; .;           ;          .;   ;          X ;           ; ;           .;   ;         ..",
-        "                      .. ...         ;.          .;  +          .;;           . .           .   ;          =.                .;;",
-        "                       ;   ;;         ;           ;; ;           ==.          ;=;           =  =           ;              ;;.;=.",
-        "                       ;.    ;;       =            = ;.          =;.          ;=            X ;.          .;           .+.   =.",
-        "                        ;     .=.     ;.            ;.;          .=.          ;=            ;..           .         ..;     =",
-        "                        ..      =+     =            .;;           +.          ;=           ..=            =       ...      =",
-        "                         ;       .=;   ;             .+.          ;.          ;=           +=            ..     .=.       =.",
-        "                         ;.        =;   ;             X.           +          ;=           =;            =    .;.        .;",
-        "                          ;         .=  ;             ;+           +          ;.          ;+            ;.   =.          =",
-        "       =                  ..          +  ;             =           ;          ;.          ;=            ;   =           =",
-        "       ;;                  ;           =.;              =          .;                     =            .; ..           =",
-        "        .;                  ;           ;.;             ;          .X                     =            + =;           .;",
-        "        ; =.                ..           ;=.            .=                               +            ; ..           .+",
-        "         ; ;.                =            =X             =.                              ;           .=;             +",
-        "         .  .=               ;.            ;;            .                                           X;             ;.",
-        "         .;   ;;.             ;             =.                                                      ;+              =",
-        "          ;     ; ;            ;             =.                                                    .+              =                   ==;;;",
-        "           =      ;.=.         .;             =                        ;;;;;                       +              =.           ;;+=; ;;;..=.",
-        "           ..         == .      ..             =                 .;+M##########M;;.               +              ..       .;;X=.       .=;",
-        "            ;.           ;=.;    ;             .=              ;X###M++++==++++M##M+;.==.        ;.             .=     ..=..          ;=",
-        "             =              ..=.  ;             .            =M##X=;...........;==+M#M##=                       =   .= .            .;.",
-        "              ;                .;. ;                       =##M+.................;M#####+                     .= .;=               ;=",
-        "               ;                 .;..                    ;M##+.................=X########+                   .=; ;               .=.",
-        "                ;                  .+=                  =M#M;.................X###########M.                .X..                .;",
-        "                 ;                   =+                X#M=.................+#############M#=              =X.                 =;",
-        "                  ;                   .+.             X#M;................=M##############=M#;            =;                 .;.",
-        "                   =                    ==           M#M................;X################X;MM;         .+.                 .=",
-        "                    =.                   .          X#M................+###M#=############X..M#;       .=                  .=",
-        "                     .=                            +#M................X###MM#+#############..;M#.                         .=",
-        "                       =;                         ;##;...............+####=#M=#############...;#M                        ;;",
-        "                        .=                        M#=................X###.;#==#############;...;#+                      ;.",
-        "                          =;                     +#X.................###X X#=X#############.....X#.                    =.",
-        "                           .==                  .MM=................X###M.## X############M.....;#+                  .;",
-        "                              .;.               M#X..........;=;.;X######X#X X############X......X#.                ;.",
-        "                   .. ;;;;=+X;;====..          .##........;XM###M##########X X############+......;#X              ;=   ...=;;;;.....",
-        "               ;..=;;             .=+.         X#X......;X##################.X############........M#.           ;;=; ;==;..    ..;.+=;.;;",
-        "            ;= ;.                             .##;.....XM###################XM###########=........;#=         .++.;                    ;;.;=+=;.",
-        "         .+;.                                 =#M....=M############;+#M#################X..........MX      .;X..                            ... .;+X=",
-        "      ..=.                                    X#+..;M##############X;#XX###############X=..........=#.    .=                                    ;;;",
-        "    ;=.                                      .M#.;M################M.X#==#############X;X..........;#=                                       .+..",
-        "   =                                         .##X###################;;#X.;XM########M=.=+...........MX                                     .;;",
-        ".=.                                          .#####M#M##############=.X#+...=X##XXX=...==...........X#.                                  .;.",
-        ";.;.  .=X;.                                  M####+MM+##############X.;#MX+...;X;......=+...........X#;                                .=.",
-        "           ==..                             X####M;#=X##############X..;++XX...X;......;+.......+...X#;                             ..X",
-        "              .=.;;                        =#####=;#.M##############+......=.;+=........X=.....+=...X#;                           ;.;",
-        "                  .; .;;;;;;;;;;;+=;       .M####.+M ###############=........X=.......;M#M+=;=X=....X#;                        ==.",
-        "                           ..==.             M###+X= ##############M........=M......;+M+#;;+==......X#;                  ..;=+",
-        "                        ..;.                 +#####= ##############X.......;X+....;+#M=+#;..........X#;     ;;.;==;;.  ;==.",
-        "                      ;.;                    +#####X ##############;..XX+=+M+...;X##M=;+M...........X#;         ...=;",
-        "                   .=.                       =######;#############MM+X;;XMX...=M###+=;;MM...........X#;              .=..",
-        "                 ;.;                         .#XX###M############+.+=........=###M+;;;=#+...........XM                  ;;.",
-        "               .;.                           .##.=##############+.........=XX###M=;;;;+#+...........MX                    ..;.",
-        "              ;.                              M#;.=M##########M=........;X#####X=;;;;;M#=..........=#=                       .;",
-        "            ;;                                =#+...+X######M+.........;M####M+;;;;;;+##...........+#.                         ..;",
-        "           =.                                 ;#M.....;=======........+M###X+;;;;;;;=M#M...........MM                            ..==",
-        "         ;=                          .;+       M#=.........=;=X=....;M##M==;;;;;;;;=MM#X..........;#=                                .=+. ...    ....",
-        "       .=.                         ;==         =#X.............+X.;+#MX=;;;;;;;;;;+#= M+..........M#.                                    ..=+==;=++;",
-        "      .+                         =X=            M#;.............XXX+=;;;;;;;;;;;=X#= =#..........;#X      ==                                    .;.",
-        "     ;;                    .. ;;;=              =#X.............=#M+=;;;;;;;;;=+MX. =#;..........X#.        ;X;.                             ..=",
-        "    =.       .;===;.==;; .;;. .=                 M#;............;X+M#XX+=;;=+X#X=  +M=..........;#X            =;==                       ;=.;",
-        "   =. ;X=..;;;;;;;;;;.       ;;                  ;#M............;=..=M##MMMM#+.  ;MM;...........MM.              .==.;+;             .=+; ;",
-        "  +=.;.                     ;.                    X#=...........+;...;=M####;  .+MX;...........=#+                 .=. .;;.  ..;;  ;;; ",
-        "  .                       ;;                      .MM;.........;M.......;=XMM+MMX;........=...;MX                    .=                ",
-        "                         =.                        ;MM;......;+M;...........;==...........=..;M#                       =;              ",
-        "                        ;.                          ;#M;....++=..........................;;..X#;                        .=             ",
-        "                      .=                             =#M.................................X.;M#=      ;                    ;.            ",
-        "                     .;                  .=           =MM;..............................===##=       ;=                    ;.           ",
-        "                    ;;                  =;             ;#M=.............................X+##;          =.                   ..          ",
-        "                   ..                  =                ;M#X;................+;.......;M##M;            ;;                   ..         ",
-        "                  ;;                 ;;                   +##X;...............++=...=X##M=                =.                  ..        ",
-        "                 ;.                .+.                     ;X##X=..............;=+MM###+.                  =;                  .;       ",
-        "                =                 ;+.                        .XM#MX;;;.........;;XM#MX.                     ;.=.                .;      ",
-        "               ;               ..;+                             +X####M+====+MM###X=                         ; ;;;               ;.    ",
-        "             ;.              ... ;               +.               .;;XX######MX;;.             .              ;  ..=.             ;   ",
-        "            ;.             ;.   ;               =.                     ......                   =             ;;     ==            =   ",
-        "          .=           ..=.    ;              .+                                                .=             ;.       =;;        ..",
-        "         ..         ;; ;      ;               X.                                                 .;             ;         ..;       ;.",
-        "       +.     . ;=+          ;               ++                                                   ;;             .            +      ;",
-        "     ;.   .;;;;             ;              ..=           .                            .            +=            .              =.   ..",
-        "  ;;=;=. ;;                ;.             . ;.          .;                             ;           .;;            ;              .;   ;",
-        " .                         ;             ;  ;           X           +                  ;            ;;=            =               .; ..",
-        "                          =            .;  ;           .=          .=         ;         ;            = =.          ..               .= ;",
-        "                         ;.          ;;    ;           ==          .;         +         ;.            . ..          ;                 ==.",
-        "                         =         .;     =           ..;          =;         X          +            ;  .=          .                 ;=",
-        "                        ;       . .       ;           ;            =;         =          =;            ;   =.        =                  =",
-        "                       ..     .;.        ;           ..;           .;         =;         .;            .    .=        ;",
-        "                       ;    .;           ;           . +          ;.;         .           ;.            ;     =.      .",
-        "                      ..   .            ;           =  +          . .         .;          .;            ;      ...     ;",
-        "                      ;  .;             ;          ;   ;          . .           .         . .           ..       ;;    ..",
-        "                     .. =              ..         .    ;         .  .           ;         ;; =           ;         ;.   =",
-        "                     ;.=               =         ;.              ;  =         .  ;         . .;          .           ;;  =",
-        "                    .+.                ;        ;.              ..  +         ;  .            ;.          .           ;;  .",
-        "                    .                 =        ;.               ;   ;         ;   .        =   ;          =             ;.=",
-        "                                      ;       ;.               ..   .         ;   ;.       ;.   ;         ;              .=.",
-        "                                     ;       ..                ;              +    ;       ..    .        .;              .+",
-        "                                     ;      ;                 .;    ;         ;     ;             .        .                +",
-        "                                    =      =                  ;     .;        ;     ;.      ;      .       ;",
-        "                                   .      ;                   =      .               ;      ;       .       .",
-        "                                  .;    =.             ;      =      .       =        ;     ;        ;.     .",
-        "                                  =   ..               ;     ;       ;       =        ;     ;         ;     =",
-        "                                 ;  .;                 +     +       =.      .         ;    +          ;    ;",
-        "                                .. ;;                  ;     .       .      ..         ;    X                ",
-        "                               .==.                         .         .     ;           ;   =                ;",
-        "                              .+.                       .   =         ;                 =   ;            .   +",
-        "                                                        =   .         +    .;           ..  ;             ;  .",
-        "                                                        ;   .         =    .             ;  ;              ;",
-        "                                                            ;         ;    ;             =                  ;..",
-        "                                                         . ;              ..             ..                 ;.=",
-        "                                                         . ;              .               =..                =.",
-        "                                                                          .               ;;                 .;",
-        "                                                         ;.;             =                .;                  +",
-        "                                                          .;                              ..",
-        "                                                          +X            =                 ;=",
-        "                                                           +            .                 .;",
-        "                                                           .           .",
-        "                                                                      =;",
-        "                                                                      .  ",
-      ];
-
-      // Density weights aligned with characters present in the source artwork
-      const CHAR_DENSITY = {
-        " ": 0.0,
-        ".": 0.14,
-        ":": 0.25,
-        ";": 0.36,
-        "=": 0.48,
-        "+": 0.58,
-        "X": 0.72,
-        "M": 0.86,
-        "#": 1.0,
-      };
-
-      const DENSITY_RAMP = " .:;+=XM#";
-
-      // Color palettes for each theme
-      const COLOR_THEMES = {
-        crimson: {
-          activeClasses: ["bg-rose-950", "text-rose-200", "border-rose-400"],
-          palette: ["#0b0305", "#3b0712", "#7f1d1d", "#b91c1c", "#e11d48", "#fb7185", "#fda4af", "#fff1f2"],
-        },
-        cyan: {
-          activeClasses: ["bg-cyan-950", "text-cyan-200", "border-cyan-400"],
-          palette: ["#040811", "#0c2340", "#172554", "#1d4ed8", "#0284c7", "#22d3ee", "#a5f3fc", "#f8fafc"],
-        },
-        emerald: {
-          activeClasses: ["bg-emerald-950", "text-emerald-200", "border-emerald-400"],
-          palette: ["#030c08", "#052e1f", "#064e3b", "#047857", "#059669", "#10b981", "#6ee7b7", "#ecfdf5"],
-        },
-        amber: {
-          activeClasses: ["bg-amber-950", "text-amber-200", "border-amber-400"],
-          palette: ["#0c0702", "#2e1303", "#451a03", "#92400e", "#d97706", "#f59e0b", "#fcd34d", "#fffbeb"],
-        },
-        violet: {
-          activeClasses: ["bg-violet-950", "text-violet-200", "border-violet-400"],
-          palette: ["#070411", "#1e0b3d", "#2e1065", "#5b21b6", "#7c3aed", "#a855f7", "#d8b4fe", "#faf5ff"],
-        },
-      };
-
-      const ALL_ACTIVE_CLASSES = Object.values(COLOR_THEMES).flatMap((t) => t.activeClasses);
-
-      // =====================================================================
-      // 2. Build Sampled 136x58 Grid From Source ASCII Artwork
-      // =====================================================================
-      const TARGET_COLS = 136;
-      const TARGET_ROWS = 58;
-      const SRC_ROWS = RAW_ART.length;
-      const SRC_COLS = RAW_ART.reduce((maxLen, line) => Math.max(maxLen, line.length), 0);
-
-      // Sample source ASCII artwork into TARGET_COLS x TARGET_ROWS while preserving dense glyphs
-      const gridCells = [];
-      for (let r = 0; r < TARGET_ROWS; r++) {
-        const y0 = Math.floor((r / TARGET_ROWS) * SRC_ROWS);
-        const y1 = Math.max(y0 + 1, Math.ceil(((r + 1) / TARGET_ROWS) * SRC_ROWS));
-        const rowArr = [];
-
-        for (let c = 0; c < TARGET_COLS; c++) {
-          const x0 = Math.floor((c / TARGET_COLS) * SRC_COLS);
-          const x1 = Math.max(x0 + 1, Math.ceil(((c + 1) / TARGET_COLS) * SRC_COLS));
-
-          let bestChar = " ";
-          let bestWeight = 0;
-          let sumWeight = 0;
-          let count = 0;
-
-          for (let sy = y0; sy < y1 && sy < SRC_ROWS; sy++) {
-            const line = RAW_ART[sy];
-            for (let sx = x0; sx < x1 && sx < line.length; sx++) {
-              const ch = line[sx];
-              const w = Object.prototype.hasOwnProperty.call(CHAR_DENSITY, ch)
-                ? CHAR_DENSITY[ch]
-                : ch.trim()
-                  ? 0.45
-                  : 0.0;
-              sumWeight += w;
-              count++;
-              if (w > bestWeight) {
-                bestWeight = w;
-                bestChar = ch;
-              }
-            }
-          }
-
-          const avgWeight = count > 0 ? sumWeight / count : 0;
-          // Blend peak and average density so dense regions (#, M, X) remain crisp and legible
-          const density = bestWeight > 0 ? clamp(bestWeight * 0.72 + avgWeight * 0.28, 0.08, 1.0) : 0.0;
-
-          rowArr.push({
-            char: bestWeight > 0 ? bestChar : " ",
-            density,
-          });
-        }
-        gridCells.push(rowArr);
-      }
-
-      // =====================================================================
-      // 3. DOM References, State & Controls
-      // =====================================================================
-      const stage = document.getElementById("figure-stage");
-      const wrap = document.getElementById("canvas-wrap");
-      const canvas = document.getElementById("figure-canvas");
-      const btnSpin = document.getElementById("btn-spin");
-      const spinLabel = document.getElementById("spin-label");
-      const btnFullscreen = document.getElementById("btn-fullscreen");
-      const fsLabel = document.getElementById("fs-label");
-      const colorButtons = Array.from(document.querySelectorAll(".color-btn"));
-
-      if (!canvas || !wrap) return;
-      const ctx = canvas.getContext("2d", { alpha: false });
+      const canvas = document.getElementById("art");
+      const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const glyphs = " .,:;!+*x%#@";
+      const palette = [
+        [16, 8, 34],
+        [43, 15, 66],
+        [92, 23, 105],
+        [151, 34, 128],
+        [211, 59, 132],
+        [250, 103, 134],
+        [255, 151, 144],
+        [255, 194, 158],
+        [255, 229, 191],
+      ];
+      const pollenPalette = [
+        [93, 49, 18],
+        [178, 103, 35],
+        [237, 177, 80],
+        [255, 226, 151],
+      ];
+      const petalLayers = [
+        { count: 9, radius: 0.53, rotation: 0.08, shade: 0.02 },
+        { count: 8, radius: 0.43, rotation: 0.31, shade: 0.08 },
+        { count: 7, radius: 0.335, rotation: -0.15, shade: 0.14 },
+        { count: 6, radius: 0.245, rotation: 0.22, shade: 0.2 },
+      ];
+      const sparks = Array.from({ length: 64 }, (_, i) => ({
+        x: random(i + 11) * 2 - 1,
+        y: random(i + 73) * 2 - 1,
+        phase: random(i + 131) * Math.PI * 2,
+        speed: 0.12 + random(i + 197) * 0.34,
+        size: 0.4 + random(i + 263) * 1.15,
+      }));
       const state = {
-        activeColor: "cyan",
-        spinning: true,
-        yaw: 0,
-        spinVelocity: 0.72,
-        boostVelocity: 0,
-        tiltX: 0.14,
-        dragging: false,
-        lastX: 0,
-        lastY: 0,
-        fallbackFullscreen: false,
-        cssWidth: 1200,
-        cssHeight: 600,
-        cellW: 10,
-        cellH: 10,
-        baseFontSize: 12,
-        startTime: performance.now(),
-        lastFrameTime: performance.now(),
+        width: 0,
+        height: 0,
+        dpr: 1,
+        cellW: 8,
+        cellH: 15,
+        fontSize: 12,
+        time: 0,
+        lastFrame: 0,
       };
 
-      function clamp(val, lo, hi) {
-        return val < lo ? lo : val > hi ? hi : val;
+      function random(seed) {
+        const n = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+        return n - Math.floor(n);
       }
 
-      function getPalette() {
-        return (COLOR_THEMES[state.activeColor] || COLOR_THEMES.cyan).palette;
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
       }
 
-      function setColor(colorKey) {
-        if (!COLOR_THEMES[colorKey]) return;
-        state.activeColor = colorKey;
-
-        colorButtons.forEach((btn) => {
-          const isSelected = btn.dataset.color === colorKey;
-          btn.classList.remove(...ALL_ACTIVE_CLASSES);
-          if (isSelected) {
-            btn.classList.remove("bg-neutral-900", "border-neutral-800");
-            btn.classList.add(...COLOR_THEMES[colorKey].activeClasses);
-          } else {
-            btn.classList.add("bg-neutral-900", "border-neutral-800");
-          }
-        });
+      function smoothstep(value) {
+        const t = clamp(value, 0, 1);
+        return t * t * (3 - 2 * t);
       }
 
-      colorButtons.forEach((btn) => {
-        btn.addEventListener("click", () => setColor(btn.dataset.color));
-      });
-      setColor("cyan");
-
-      function updateSpinButton() {
-        if (btnSpin) btnSpin.setAttribute("aria-pressed", String(state.spinning));
-        if (spinLabel) spinLabel.textContent = state.spinning ? "Pause Spin" : "Resume Spin";
-      }
-
-      if (btnSpin) {
-        btnSpin.addEventListener("click", () => {
-          state.spinning = !state.spinning;
-          updateSpinButton();
-        });
-      }
-      updateSpinButton();
-
-      // Pointer drag-to-spin boost and subtle vertical tilt adjustment
-      canvas.addEventListener("pointerdown", (e) => {
-        state.dragging = true;
-        state.lastX = e.clientX;
-        state.lastY = e.clientY;
-        canvas.setPointerCapture(e.pointerId);
-      });
-
-      canvas.addEventListener("pointermove", (e) => {
-        if (!state.dragging) return;
-        const dx = e.clientX - state.lastX;
-        const dy = e.clientY - state.lastY;
-        state.lastX = e.clientX;
-        state.lastY = e.clientY;
-
-        state.yaw += dx * 0.012;
-        state.boostVelocity = clamp(state.boostVelocity + dx * 0.045, -7.5, 7.5);
-        state.tiltX = clamp(state.tiltX + dy * 0.004, -0.45, 0.45);
-      });
-
-      function endDrag(e) {
-        if (!state.dragging) return;
-        state.dragging = false;
-        if (e && typeof e.pointerId === "number" && canvas.hasPointerCapture(e.pointerId)) {
-          canvas.releasePointerCapture(e.pointerId);
-        }
-      }
-
-      canvas.addEventListener("pointerup", endDrag);
-      canvas.addEventListener("pointercancel", endDrag);
-
-      // Fullscreen management with sandbox fallback
-      function getFsElement() {
-        return (
-          document.fullscreenElement ||
-          document.webkitFullscreenElement ||
-          document.mozFullScreenElement ||
-          document.msFullscreenElement ||
-          null
-        );
-      }
-
-      function updateFsButton() {
-        const active = Boolean(getFsElement()) || state.fallbackFullscreen;
-        if (btnFullscreen) btnFullscreen.setAttribute("aria-pressed", String(active));
-        if (fsLabel) fsLabel.textContent = active ? "Exit Fullscreen" : "Fullscreen";
-        if (stage) {
-          stage.classList.toggle("fixed", state.fallbackFullscreen && !getFsElement());
-          stage.classList.toggle("inset-0", state.fallbackFullscreen && !getFsElement());
-          stage.classList.toggle("z-50", state.fallbackFullscreen && !getFsElement());
-        }
-      }
-
-      async function toggleFullscreen() {
-        try {
-          const current = getFsElement();
-          if (current) {
-            if (document.exitFullscreen) await document.exitFullscreen();
-            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-            state.fallbackFullscreen = false;
-            updateFsButton();
-            resize();
-            return;
-          }
-
-          if (state.fallbackFullscreen) {
-            state.fallbackFullscreen = false;
-            updateFsButton();
-            resize();
-            return;
-          }
-
-          const target = stage || canvas;
-          if (target && target.requestFullscreen) {
-            await target.requestFullscreen();
-          } else if (target && target.webkitRequestFullscreen) {
-            target.webkitRequestFullscreen();
-          } else {
-            state.fallbackFullscreen = true;
-            updateFsButton();
-            resize();
-          }
-        } catch (_err) {
-          state.fallbackFullscreen = !state.fallbackFullscreen;
-          updateFsButton();
-          resize();
-        }
-      }
-
-      if (btnFullscreen) {
-        btnFullscreen.addEventListener("click", toggleFullscreen);
-      }
-
-      document.addEventListener("fullscreenchange", () => {
-        if (!getFsElement()) state.fallbackFullscreen = false;
-        updateFsButton();
-        requestAnimationFrame(resize);
-      });
-
-      document.addEventListener("webkitfullscreenchange", () => {
-        if (!getFsElement()) state.fallbackFullscreen = false;
-        updateFsButton();
-        requestAnimationFrame(resize);
-      });
-
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && state.fallbackFullscreen && !getFsElement()) {
-          state.fallbackFullscreen = false;
-          updateFsButton();
-          resize();
-        }
-      });
-
-      // =====================================================================
-      // 4. Responsive Canvas Sizing for 136x58 Grid
-      // =====================================================================
       function resize() {
-        const rect = wrap.getBoundingClientRect();
-        const availW = Math.max(240, rect.width || window.innerWidth || 960);
-        const availH = Math.max(160, rect.height || window.innerHeight || 480);
+        state.width = window.innerWidth;
+        state.height = window.innerHeight;
+        state.dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(state.width * state.dpr);
+        canvas.height = Math.round(state.height * state.dpr);
+        ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
 
-        // Preserve monospace cell proportions across 136 cols x 58 rows
-        const targetRatio = (TARGET_COLS * 10.5) / (TARGET_ROWS * 16);
-        let drawW = availW;
-        let drawH = drawW / targetRatio;
-
-        if (drawH > availH) {
-          drawH = availH;
-          drawW = drawH * targetRatio;
-        }
-
-        const dpr = clamp(window.devicePixelRatio || 1, 1, 2.5);
-        state.cssWidth = Math.floor(drawW);
-        state.cssHeight = Math.floor(drawH);
-
-        canvas.style.width = `${state.cssWidth}px`;
-        canvas.style.height = `${state.cssHeight}px`;
-        canvas.width = Math.round(state.cssWidth * dpr);
-        canvas.height = Math.round(state.cssHeight * dpr);
-
-        state.cellW = state.cssWidth / TARGET_COLS;
-        state.cellH = state.cssHeight / TARGET_ROWS;
-
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        const fontSize = Math.max(7, Math.floor(Math.min(state.cellW * 1.25, state.cellH * 0.98)));
-        state.baseFontSize = fontSize;
-        ctx.font = `700 ${fontSize}px "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+        const fontSize = clamp(Math.min(state.width / 138, state.height / 58), 6, 15);
+        state.fontSize = fontSize;
+        ctx.font = `600 ${fontSize}px "Courier New", monospace`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
+        state.cellW = fontSize * 0.56;
+        state.cellH = fontSize * 0.96;
       }
 
-      resize();
-      window.addEventListener("resize", resize);
-      if (typeof ResizeObserver !== "undefined") {
-        new ResizeObserver(resize).observe(wrap);
+      function colorAt(colors, amount, alpha = 1) {
+        const position = clamp(amount, 0, 0.9999) * (colors.length - 1);
+        const index = Math.floor(position);
+        const fraction = position - index;
+        const a = colors[index];
+        const b = colors[index + 1] || a;
+        const r = Math.round(a[0] + (b[0] - a[0]) * fraction);
+        const g = Math.round(a[1] + (b[1] - a[1]) * fraction);
+        const blue = Math.round(a[2] + (b[2] - a[2]) * fraction);
+        return `rgba(${r},${g},${blue},${alpha})`;
       }
 
-      // =====================================================================
-      // 5. 3D-Spinning Glyph-Grid Sculpture Renderer
-      // =====================================================================
-      function render(now) {
-        const dt = Math.min(0.05, Math.max(0, (now - state.lastFrameTime) / 1000));
-        state.lastFrameTime = now;
-        const t = (now - state.startTime) / 1000;
-
-        // Advance continuous Y-axis spin plus any drag boost impulse
-        if (state.spinning) {
-          state.yaw += (state.spinVelocity + state.boostVelocity) * dt;
+      function render(timestamp) {
+        if (!reducedMotion) {
+          const delta = state.lastFrame ? Math.min((timestamp - state.lastFrame) / 1000, 0.05) : 0;
+          state.time += delta;
         } else {
-          state.yaw += state.boostVelocity * dt;
+          state.time = 9;
         }
-        state.boostVelocity *= Math.pow(0.08, dt);
+        state.lastFrame = timestamp;
 
-        const palette = getPalette();
-        const palMax = palette.length - 1;
-        const rampMax = DENSITY_RAMP.length - 1;
-
-        ctx.fillStyle = "#000000";
-        ctx.fillRect(0, 0, state.cssWidth, state.cssHeight);
-
-        const cw = state.cellW;
-        const ch = state.cellH;
-        const halfCols = (TARGET_COLS - 1) * 0.5;
-        const halfRows = (TARGET_ROWS - 1) * 0.5;
-        const centerX = state.cssWidth * 0.5;
-        const centerY = state.cssHeight * 0.5;
-
-        const cosY = Math.cos(state.yaw);
-        const sinY = Math.sin(state.yaw);
-        const effectiveTilt = state.tiltX + Math.sin(t * 0.85) * 0.08;
-        const cosT = Math.cos(effectiveTilt);
-        const sinT = Math.sin(effectiveTilt);
-
-        // Slight sculptural curvature depth across horizontal and vertical coordinates
-        const depthSpan = Math.min(state.cssWidth, state.cssHeight) * 0.42;
-        const fov = depthSpan * 2.35;
-
-        // Project every active glyph cell into 3D space and painter-sort back-to-front
+        const t = state.time;
+        const bloom = smoothstep(t / 4.8);
+        const breath = reducedMotion ? 1 : 0.985 + Math.sin(t * 0.72) * 0.015;
+        const scale = Math.min(state.height * 0.76, state.width * 0.72);
+        const centerX = state.width * 0.5;
+        const centerY = state.height * 0.5;
+        const wind = reducedMotion
+          ? 0
+          : (Math.sin(t * 0.52) + Math.sin(t * 1.17 + 1.4) * 0.32)
+            * (0.82 + 0.18 * Math.max(0, Math.sin(t * 0.21 + 0.8)));
+        const cols = Math.ceil(state.width / state.cellW);
+        const rows = Math.ceil(state.height / state.cellH);
+        const halfCols = cols / 2;
+        const halfRows = rows / 2;
+        const yaw = reducedMotion ? 0.2 : Math.sin(t * 0.2) * 0.36 + wind * 0.05;
+        const pitch = 0.12 + (reducedMotion ? 0 : Math.sin(t * 0.27) * 0.035);
+        const cosYaw = Math.cos(yaw);
+        const sinYaw = Math.sin(yaw);
+        const cosPitch = Math.cos(pitch);
+        const sinPitch = Math.sin(pitch);
+        const focalLength = 3.8;
         const projected = [];
 
-        for (let r = 0; r < TARGET_ROWS; r++) {
-          const normY = (r - halfRows) / Math.max(1, halfRows);
-          const y0 = (r - halfRows) * ch;
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, state.width, state.height);
 
-          for (let c = 0; c < TARGET_COLS; c++) {
-            const cell = gridCells[r][c];
-            if (cell.density <= 0.01) continue;
+        for (const spark of sparks) {
+          const drift = reducedMotion ? 0 : Math.sin(t * spark.speed + spark.phase);
+          const x = (spark.x + drift * 0.035 + wind * 0.018) * state.width * 0.49 + centerX;
+          const y = (spark.y + Math.cos(t * spark.speed * 0.8 + spark.phase) * 0.025) * state.height * 0.48 + centerY;
+          const glint = 0.2 + (0.5 + 0.5 * Math.sin(t * 1.4 + spark.phase)) * 0.58;
+          ctx.fillStyle = `rgba(255,199,177,${reducedMotion ? 0.36 : glint})`;
+          ctx.fillText(spark.size > 1.15 ? "." : "·", x, y);
+        }
 
-            const normX = (c - halfCols) / Math.max(1, halfCols);
-            const x0 = (c - halfCols) * cw * 1.15;
+        for (let row = 0; row < rows; row++) {
+          const y = (row - halfRows) * state.cellH;
+          const ny = (y - centerY * 0.02) / scale;
+          for (let col = 0; col < cols; col++) {
+            const x = (col - halfCols) * state.cellW;
+            const nx = (x - centerX * 0.02) / scale;
+            let glyph = " ";
+            let color = "";
+            let depth = 0;
+            const flowerX = nx - wind * 0.018;
+            const flowerY = ny;
+            const radius = Math.hypot(flowerX, flowerY);
+            const angle = Math.atan2(flowerY, flowerX);
 
-            // Gentle relief depth tied to cell density and subtle cylindrical curve
-            const reliefZ = (cell.density - 0.35) * 0.28 + (1.0 - normX * normX * 0.35) * 0.14;
-            const z0 = reliefZ * depthSpan;
+            if (bloom > 0.015) {
+              for (let layerIndex = 0; layerIndex < petalLayers.length; layerIndex++) {
+                const layer = petalLayers[layerIndex];
+                const layerBloom = smoothstep((t - layerIndex * 0.42) / 4.8);
+                const radialWind = clamp(radius / Math.max(0.01, layer.radius), 0, 1);
+                const windRipple = wind * radialWind;
+                const rotatedAngle = angle - layer.rotation - windRipple * 0.12;
+                const petalWave = (0.79 + 0.21 * Math.cos(rotatedAngle * layer.count)) * (1 + windRipple * 0.025);
+                const petalEdge = layer.radius * petalWave * layerBloom * breath;
+                if (radius >= petalEdge) continue;
 
-            // Rotate around Y axis
-            const xRotY = x0 * cosY + z0 * sinY;
-            const zRotY = -x0 * sinY + z0 * cosY;
+                const radial = radius / Math.max(0.01, petalEdge);
+                const nearestPetal = Math.round(rotatedAngle / (Math.PI * 2 / layer.count)) * (Math.PI * 2 / layer.count) + layer.rotation;
+                const angleFromVein = Math.atan2(Math.sin(angle - nearestPetal), Math.cos(angle - nearestPetal));
+                const veinDistance = Math.abs(Math.sin(angleFromVein)) * radius;
+                const folds = Math.abs(Math.sin(angleFromVein * 6.5 + radial * 4));
+                const edgeLight = Math.exp(-Math.pow((radial - 0.88) * 13, 2));
+                const petalRidge = Math.exp(-Math.pow((radial - (0.48 + 0.08 * Math.sin(angleFromVein * 9))) * 28, 2));
+                const fineRidge = Math.exp(-Math.pow((radial - (0.7 + 0.035 * Math.sin(angleFromVein * 15))) * 48, 2));
+                const shimmer = 0.5 + 0.5 * Math.sin(t * 0.85 + nearestPetal * 3 + radial * 5 + wind * 0.5);
+                const breezeFold = Math.sin(angle * 2.5 - t * 1.35 + radial * 4) * wind * radial * 0.09;
+                const density = clamp((1 - radial) * 0.54 + folds * 0.15 + edgeLight * 0.17 + petalRidge * 0.16 + fineRidge * 0.12 + shimmer * 0.11 + breezeFold, 0, 1);
+                const brightness = clamp(0.17 + (1 - radial) * 0.32 + folds * 0.11 + edgeLight * 0.17 + petalRidge * 0.21 + fineRidge * 0.15 + shimmer * 0.1 - layer.shade, 0, 1);
+                const index = Math.min(glyphs.length - 1, 2 + Math.floor(density * 9));
+                glyph = glyphs[index];
+                const petalHue = clamp(brightness + 0.11 * Math.sin(nearestPetal * 2.4) + (layerIndex === 0 ? 0.06 : 0), 0, 1);
+                color = colorAt(palette, petalHue);
+                const petalDome = 0.3 * (1 - radial * radial);
+                const petalFold = 0.04 * Math.cos(angleFromVein * 8 + radial * 5);
+                const petalRim = -0.075 * Math.exp(-Math.pow((radial - 0.94) * 16, 2));
+                depth = 0.015 + layerIndex * 0.028 + petalDome + petalFold + petalRim;
 
-            // Apply subtle 3D vertical tilt around X axis
-            const yRot = y0 * cosT - zRotY * sinT;
-            const zFinal = y0 * sinT + zRotY * cosT;
-
-            // Perspective projection
-            const denom = Math.max(120, fov + zFinal);
-            const scale = fov / denom;
-            const sx = centerX + xRotY * scale;
-            const sy = centerY + yRot * scale;
-
-            if (sx < -cw * 2 || sx > state.cssWidth + cw * 2 || sy < -ch * 2 || sy > state.cssHeight + ch * 2) {
-              continue;
+                if (radial > 0.15 && radial < 0.94) {
+                  const centerVein = veinDistance < 0.0075;
+                  const branchSide = angleFromVein < 0 ? -1 : 1;
+                  const branchWave = 0.085 + radial * 0.24 + 0.025 * Math.sin(radial * 30 + nearestPetal * 5);
+                  const branchOffset = angleFromVein - branchSide * branchWave;
+                  const fineVein = Math.abs(branchOffset) * radius < 0.008 && radial > 0.2 && radial < 0.88;
+                  const ridgeLine = fineRidge > 0.82 && folds > 0.45;
+                  if (centerVein || fineVein || ridgeLine) {
+                    glyph = centerVein ? (radial > 0.72 ? ":" : "+") : fineVein ? "." : "'";
+                    color = colorAt(palette, Math.min(1, brightness + (centerVein ? 0.18 : fineVein ? 0.12 : 0.08)));
+                  } else if (edgeLight > 0.48) {
+                    glyph = ".";
+                    color = colorAt(palette, Math.min(1, brightness + 0.14));
+                  }
+                }
+              }
             }
 
-            // Normalized depth [-1 (front) .. +1 (back)] for brightness and back-face shading
-            const depthNorm = clamp(zFinal / Math.max(1, depthSpan * 1.15), -1.2, 1.2);
-            const frontFactor = clamp(0.54 - depthNorm * 0.46, 0.18, 1.0);
-            const backDim = depthNorm > 0.15 ? clamp(1.0 - (depthNorm - 0.15) * 0.58, 0.25, 1.0) : 1.0;
-
-            const shimmer = 0.92 + 0.08 * Math.sin(normX * 8.0 + normY * 6.0 - t * 2.2);
-            const effectiveDensity = clamp(cell.density * frontFactor * backDim * shimmer, 0.05, 1.0);
-
-            let glyph = cell.char;
-            if (cell.density < 0.72) {
-              const rampIdx = clamp(Math.round(effectiveDensity * rampMax), 1, rampMax);
-              glyph = DENSITY_RAMP[rampIdx];
+            const coreRadius = Math.hypot(flowerX, flowerY);
+            if (coreRadius < 0.12 * bloom && bloom > 0.1) {
+              const stamenCount = 17;
+              const stamenAngle = Math.round(angle * stamenCount / (Math.PI * 2)) * (Math.PI * 2 / stamenCount);
+              const stamenOffset = Math.atan2(Math.sin(angle - stamenAngle), Math.cos(angle - stamenAngle));
+              const stamenDistance = Math.abs(Math.sin(stamenOffset)) * coreRadius;
+              const stamenTipDistance = Math.abs(coreRadius - 0.102 * bloom);
+              const seedCount = 21;
+              const seedStep = (Math.PI * 2) / seedCount;
+              const seedIndex = Math.round(angle / seedStep);
+              const seedAngle = seedIndex * seedStep;
+              const seedRadius = 0.058 + Math.sin(seedIndex * 12.7) * 0.008 + Math.cos(seedIndex * 4.3) * 0.004;
+              const seedDistance = Math.hypot(
+                coreRadius - seedRadius,
+                Math.sin(angle - seedAngle) * coreRadius
+              );
+              const coreRing = Math.abs(coreRadius - 0.032) < 0.005;
+              if (coreRadius > 0.068 * bloom && coreRadius < 0.12 * bloom && stamenDistance < 0.0038 && stamenTipDistance < 0.028 * bloom) {
+                glyph = stamenTipDistance < 0.008 * bloom ? "*" : ".";
+                color = colorAt(pollenPalette, 0.72 + 0.24 * Math.sin(stamenAngle * 3 + t));
+                depth = 0.27 + (1 - stamenTipDistance / (0.025 * bloom)) * 0.025;
+              } else if (seedDistance < 0.012) {
+                glyph = seedDistance < 0.006 ? "@" : "*";
+                color = colorAt(pollenPalette, 0.65 + 0.32 * Math.sin(t * 1.4 + seedIndex));
+                depth = 0.29;
+              } else if (coreRing) {
+                glyph = (row + col) % 2 === 0 ? "." : ":";
+                color = colorAt(pollenPalette, 0.5 + coreRadius);
+                depth = 0.26;
+              } else {
+                glyph = (row + col) % 3 === 0 ? "x" : "+";
+                color = colorAt(palette, 0.88 + 0.1 * Math.sin(t * 2));
+                depth = 0.24;
+              }
             }
 
-            const colorIdx = clamp(Math.floor(effectiveDensity * (palMax + 0.99)), 1, palMax);
-
-            projected.push({
-              z: zFinal,
-              sx,
-              sy,
-              scale,
-              glyph,
-              color: palette[colorIdx],
-            });
+            if (glyph !== " ") {
+              const localX = x / scale;
+              const localY = y / scale;
+              const rotatedX = localX * cosYaw - depth * sinYaw;
+              const rotatedZ = localX * sinYaw + depth * cosYaw;
+              const tiltedY = localY * cosPitch - rotatedZ * sinPitch;
+              const viewDepth = localY * sinPitch + rotatedZ * cosPitch;
+              const perspective = focalLength / (focalLength - viewDepth);
+              const shade = clamp(0.8 + viewDepth * 0.56 + depth * 0.18, 0.48, 1.12);
+              projected.push({
+                glyph,
+                color,
+                depth: viewDepth,
+                x: centerX + rotatedX * scale * perspective,
+                y: centerY + tiltedY * scale * perspective,
+                size: perspective,
+                shade,
+              });
+            }
           }
         }
 
-        // Back-to-front depth sort so foreground glyphs overlap background glyphs naturally
-        projected.sort((a, b) => b.z - a.z);
-
+        projected.sort((a, b) => a.depth - b.depth);
         let lastFontSize = -1;
-        for (let i = 0; i < projected.length; i++) {
-          const item = projected[i];
-          const fontSize = Math.max(6, Math.round(state.baseFontSize * item.scale));
+        for (const item of projected) {
+          const fontSize = Math.max(5, Math.round(state.fontSize * item.size));
           if (fontSize !== lastFontSize) {
-            ctx.font = `700 ${fontSize}px "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+            ctx.font = `600 ${fontSize}px "Courier New", monospace`;
             lastFontSize = fontSize;
           }
-          ctx.fillStyle = item.color;
-          ctx.fillText(item.glyph, item.sx, item.sy);
+          ctx.fillStyle = item.color.replace(/[\d.]+\)$/, `${item.shade})`);
+          ctx.fillText(item.glyph, item.x, item.y);
         }
 
-        // Restore base font for next frame
-        if (lastFontSize !== state.baseFontSize) {
-          ctx.font = `700 ${state.baseFontSize}px "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
-        }
-
-        requestAnimationFrame(render);
+        ctx.font = `600 ${state.fontSize}px "Courier New", monospace`;
+        if (!reducedMotion) requestAnimationFrame(render);
       }
 
-      window.addEventListener("load", () => {
-        resize();
-        state.startTime = performance.now();
-        state.lastFrameTime = performance.now();
-        requestAnimationFrame(render);
-      });
+      window.addEventListener("resize", resize);
+      resize();
+      if (reducedMotion) render(0);
+      else requestAnimationFrame(render);
     })();
   </script>
 </body>
