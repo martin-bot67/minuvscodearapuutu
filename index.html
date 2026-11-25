@@ -1,421 +1,386 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mindlab – Train your mind</title>
-<meta name="color-scheme" content="dark">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;800&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#000;--panel:#08080a;--line:#212127;--text:#f2f2f4;--dim:#85858f;--accent:#8c9cff;
---display:'Syne','Helvetica Neue',Arial,sans-serif;--body:'Instrument Sans','Helvetica Neue',Arial,sans-serif}
-*{box-sizing:border-box;margin:0}
-html{scroll-behavior:smooth;color-scheme:dark}
-body{background:radial-gradient(ellipse at 50% 12%,rgba(140,156,255,.07),transparent 42%),var(--bg);color:var(--text);font:400 17px/1.6 var(--body);overflow-x:hidden}
-a{color:inherit;text-decoration:none}
-:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-.wrap{max-width:900px;margin:0 auto;padding:0 24px}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animated Eye — Symbol Grid</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&display=swap');
 
-#glow{position:fixed;width:380px;height:380px;border-radius:50%;pointer-events:none;z-index:0;
-background:radial-gradient(circle,rgba(140,156,255,.09),transparent 65%);transform:translate(-50%,-50%);left:-999px;top:-999px}
+    :root {
+      color-scheme: dark;
+    }
 
-nav{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:22px 32px;background:rgba(0,0,0,.62);border-bottom:1px solid rgba(255,255,255,.045);backdrop-filter:blur(14px)}
-.logo{font:800 21px var(--display);letter-spacing:-.02em}
-.logo::after{content:".";color:var(--accent)}
-nav ul{display:flex;gap:28px;list-style:none;padding:0}
-nav a{color:var(--dim);font-size:15px;transition:color .2s}
-nav a:hover{color:var(--text)}
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #000000;
+      color: #f8fafc;
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow: hidden;
+    }
 
-.hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center}
-#net{position:absolute;inset:0;width:100%;height:100%}
-.hero-inner{position:relative;z-index:1;padding:0 24px;pointer-events:none}
-.hero-inner a{pointer-events:auto}
-.hero-kicker{display:inline-flex;align-items:center;gap:9px;margin-bottom:22px;color:var(--dim);font-size:12px;font-weight:500;letter-spacing:.18em;text-transform:uppercase}
-.hero-kicker::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px rgba(140,156,255,.8)}
-h1{font:800 clamp(42px,8vw,96px)/.98 var(--display);letter-spacing:-.04em;margin-bottom:22px}
-h1 span{color:#aeb8ff}
-.hero p{color:var(--dim);max-width:40ch;margin:0 auto 32px;font-size:18px}
-.btn{display:inline-block;padding:14px 28px;border:1px solid var(--text);border-radius:999px;font-weight:500;background:var(--text);color:#000;
-transition:background .2s,color .2s;cursor:pointer;font-family:inherit;font-size:16px}
-.btn:hover{background:transparent;color:var(--text)}
-.btn.ghost{background:transparent;color:var(--text);border-color:var(--line)}
-.btn.ghost:hover{border-color:var(--text)}
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background-color: #000000;
+    }
 
-section{position:relative;z-index:1;padding:110px 0}
-h2{font:800 clamp(30px,4.5vw,46px)/1.05 var(--display);letter-spacing:-.03em;margin-bottom:12px}
-.lead{color:var(--dim);max-width:48ch;margin-bottom:40px}
-
-.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
-.tool{background:linear-gradient(145deg,rgba(255,255,255,.025),transparent 48%),var(--panel);border:1px solid var(--line);border-radius:20px;padding:26px;min-height:320px;display:flex;flex-direction:column;transition:border-color .3s,transform .3s}
-.tool:hover{border-color:#34343e;transform:translateY(-2px)}
-.tool h3{font:600 20px var(--display)}
-.tool small{color:var(--dim);display:block;margin-bottom:18px}
-.stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
-
-#react-box{width:100%;flex:1;border-radius:14px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center;padding:14px;cursor:pointer;user-select:none;transition:background .1s}
-#react-box.wait{background:#160a0d;border-color:#40181f}
-#react-box.go{background:var(--accent);color:#000;border-color:var(--accent);font-weight:500}
-.best{color:var(--dim);font-size:14px;margin-top:12px}
-#orb{width:90px;height:90px;border-radius:50%;border:1px solid var(--accent);background:radial-gradient(circle,rgba(140,156,255,.4),rgba(140,156,255,.04) 70%);transition:transform 4s ease-in-out}
-#orb-label{min-height:26px}
-.slot-machine{justify-content:space-between}
-.slot-reels{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:12px 0 16px}
-.slot-reel{display:grid;place-items:center;aspect-ratio:1;border:1px solid var(--line);border-radius:10px;background:#050506;color:#aeb8ff;font-size:clamp(18px,4vw,25px);box-shadow:inset 0 0 18px rgba(140,156,255,.04)}
-.slot-controls{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.slot-controls .btn{padding:10px 18px}
-.slot-controls .btn:disabled{opacity:.55;cursor:wait}
-#slot-status{color:var(--dim);font-size:14px;min-height:24px;margin-top:8px}
-.slot-note{color:var(--dim);font-size:12px;margin-top:4px}
-
-.prog{border-top:1px solid var(--line)}
-.prog:last-child{border-bottom:1px solid var(--line)}
-.prog summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:24px 4px;font:600 clamp(20px,3vw,28px) var(--display);letter-spacing:-.02em;transition:padding-left .3s,color .3s}
-.prog summary::-webkit-details-marker{display:none}
-.prog summary::after{content:'+';font-size:28px;color:var(--dim);transition:transform .3s}
-.prog[open] summary::after{transform:rotate(45deg);color:var(--accent)}
-.prog summary:hover{padding-left:14px;color:var(--accent)}
-.prog p{color:var(--dim);padding:0 4px 26px;max-width:56ch}
-
-.signup{text-align:center}
-form{display:flex;gap:10px;max-width:440px;margin:28px auto 0;flex-wrap:wrap;justify-content:center}
-input{flex:1;min-width:200px;padding:14px 20px;background:var(--panel);border:1px solid var(--line);border-radius:999px;color:var(--text);font:inherit}
-input:focus{outline:none;border-color:var(--accent)}
-#msg{margin-top:14px;color:var(--accent);min-height:26px}
-footer{padding:36px 24px;text-align:center;color:var(--dim);font-size:14px;border-top:1px solid var(--line);position:relative;z-index:1}
-#save{display:none;gap:8px;margin-top:12px}
-#save.show{display:flex}
-#save input{min-width:0;padding:10px 16px;font-size:15px}
-#save button{padding:10px 18px;font-size:15px}
-#save-msg{color:var(--dim);font-size:14px;min-height:22px;margin-top:8px}
-.board{grid-column:1/-1;min-height:0}
-.board-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.live-tag{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:14px}
-.dot{width:8px;height:8px;border-radius:50%;background:#444}
-.dot.live{background:var(--accent);box-shadow:0 0 10px var(--accent)}
-#rows{list-style:none;padding:0}
-#rows li{display:grid;grid-template-columns:36px 1fr auto;padding:12px 4px;border-top:1px solid var(--line)}
-#rows li.me{color:var(--accent)}
-#rows .rank{color:var(--dim)}
-#rows .empty{display:block;color:var(--dim)}
-@media (max-width:640px){nav ul{display:none}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}html{scroll-behavior:auto}}
-</style>
+    #eye-stage:fullscreen {
+      width: 100vw;
+      height: 100vh;
+      background-color: #000000;
+    }
+  </style>
 </head>
 <body>
-<div id="glow"></div>
+  <div id="eye-stage" class="relative w-screen h-screen bg-black flex flex-col items-center justify-between p-2 sm:p-4 overflow-hidden">
+    <!-- Top Bar: Fullscreen Button + Color Swatches -->
+    <div class="z-10 flex flex-wrap items-center justify-center gap-2 bg-black/85 border border-neutral-800 rounded-xl px-3 py-2">
+      <button id="btn-fullscreen" type="button" aria-pressed="false" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-neutral-900 hover:bg-neutral-800 text-white border border-neutral-700 transition cursor-pointer">
+        <span id="fs-label">Fullscreen</span>
+      </button>
 
-<nav>
-<a href="#top" class="logo">Mindlab</a>
-<ul><li><a href="#try">Try it</a></li><li><a href="#programs">Programs</a></li><li><a href="#join">Join</a></li></ul>
-</nav>
+      <div class="h-4 w-px bg-neutral-800 mx-0.5"></div>
 
-<header class="hero" id="top">
-<canvas id="net" aria-hidden="true"></canvas>
-<div class="hero-inner">
-<div class="hero-kicker">A little clarity, daily</div>
-<h1>Train <span>your mind.</span></h1>
-<p>Short exercises for focus, calm and clear thinking. Move your cursor.</p>
-<a class="btn" href="#try">Try an exercise</a>
-</div>
-</header>
+      <button type="button" data-color="cyan" class="color-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-cyan-950 text-cyan-300 border border-cyan-500/70 transition cursor-pointer">
+        Cyan
+      </button>
+      <button type="button" data-color="crimson" class="color-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-neutral-900 text-rose-300 border border-neutral-800 hover:border-rose-500/60 transition cursor-pointer">
+        Crimson
+      </button>
+      <button type="button" data-color="emerald" class="color-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-neutral-900 text-emerald-300 border border-neutral-800 hover:border-emerald-500/60 transition cursor-pointer">
+        Emerald
+      </button>
+      <button type="button" data-color="amber" class="color-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-neutral-900 text-amber-300 border border-neutral-800 hover:border-amber-500/60 transition cursor-pointer">
+        Amber
+      </button>
+      <button type="button" data-color="violet" class="color-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-neutral-900 text-violet-300 border border-neutral-800 hover:border-violet-500/60 transition cursor-pointer">
+        Violet
+      </button>
+    </div>
 
-<section id="try">
-<div class="wrap">
-<h2>Two minutes. Two tools.</h2>
-<p class="lead">Test how sharp you are, then slow down.</p>
-<div class="tools">
-<div class="tool">
-<h3>Reaction test</h3><small>Click when the box turns blue.</small>
-<div id="react-box" tabindex="0" role="button">Click to start</div>
-<div class="best" id="best">Best: –</div>
-<form id="save" autocomplete="off">
-<input id="uname" placeholder="Username" maxlength="16" aria-label="Username" required>
-<button class="btn" type="submit">Save score</button>
-</form>
-<div id="save-msg" aria-live="polite"></div>
-</div>
-<div class="tool">
-<h3>Breathing pacer</h3><small>In 4s, hold 4s, out 6s.</small>
-<div class="stage">
-<div id="orb"></div>
-<div id="orb-label" aria-live="polite">Ready</div>
-<button class="btn ghost" id="breathe-btn">Start</button>
-</div>
-</div>
-<div class="tool slot-machine">
-<h3>Lucky ten</h3><small>Line up all ten diamonds for the jackpot.</small>
-<div class="slot-reels" id="slot-reels" aria-hidden="true"></div>
-<div class="slot-controls">
-<button class="btn ghost" id="slot-spin" type="button">Spin</button>
-<span class="slot-note">1 in 100,000 per spin · Win 50€</span>
-</div>
-<div id="slot-status" aria-live="polite">Ready when you are.</div>
-</div>
-</div>
-<div class="tool board">
-<div class="board-head"><h3>Leaderboard</h3><span class="live-tag"><span class="dot" id="dot"></span><span id="status">Connecting…</span></span></div>
-<ol id="rows"><li class="empty">Loading…</li></ol>
-</div>
-</div>
-</div>
-</section>
+    <!-- Centered Eye Canvas Wrapper -->
+    <div id="canvas-wrap" class="relative flex-1 w-full max-w-[1900px] min-h-0 flex items-center justify-center my-1">
+      <canvas id="eye-canvas"></canvas>
+    </div>
 
-<section id="programs">
-<div class="wrap">
-<h2>Programs</h2>
-<p class="lead">Open one to see what's inside.</p>
-<details class="prog"><summary>Focus</summary><p>Ten-minute daily drills for attention: single-task sessions, distraction logging and a weekly review.</p></details>
-<details class="prog"><summary>Calm</summary><p>Breathing, body scans and short resets you can do at your desk.</p></details>
-<details class="prog"><summary>Memory</summary><p>Spaced recall, memory palace practice and pattern games.</p></details>
-</div>
-</section>
+    <!-- Bottom spacer for balanced centering -->
+    <div class="h-1 w-full"></div>
+  </div>
 
-<section id="join" class="signup">
-<div class="wrap">
-<h2>Start this week.</h2>
-<p class="lead" style="margin:0 auto">One exercise in your inbox every Monday.</p>
-<form id="form">
-<input type="email" id="email" placeholder="you@email.com" aria-label="Email address" required>
-<button class="btn" type="submit">Join</button>
-</form>
-<div id="msg" aria-live="polite"></div>
-</div>
-</section>
+  <script>
+    (function () {
+      "use strict";
 
-<footer>© 2026 Mindlab</footer>
+      // Grid dimensions and character ramp
+      const COLS = 136;
+      const ROWS = 58;
+      const RAMP = " .:-=+*#%@";
+      const BG_COLOR = "#000000";
+      const IRIS_R = 0.48;
+      const BLINK_PERIOD = 4.5;
+      const BLINK_DURATION = 0.28;
 
-<script>
-/* cursor glow */
-const glow=document.getElementById('glow');
-addEventListener('pointermove',e=>{glow.style.left=e.clientX+'px';glow.style.top=e.clientY+'px'});
+      // Color palettes for each iris theme
+      const COLOR_THEMES = {
+        cyan: {
+          activeClasses: ["bg-cyan-950", "text-cyan-200", "border-cyan-400"],
+          palette: ["#050811", "#172554", "#1d4ed8", "#0284c7", "#22d3ee", "#a5f3fc", "#f8fafc"],
+        },
+        crimson: {
+          activeClasses: ["bg-rose-950", "text-rose-200", "border-rose-400"],
+          palette: ["#0d0407", "#450a0a", "#991b1b", "#dc2626", "#f43f5e", "#fda4af", "#fff1f2"],
+        },
+        emerald: {
+          activeClasses: ["bg-emerald-950", "text-emerald-200", "border-emerald-400"],
+          palette: ["#030c08", "#064e3b", "#047857", "#059669", "#10b981", "#6ee7b7", "#ecfdf5"],
+        },
+        amber: {
+          activeClasses: ["bg-amber-950", "text-amber-200", "border-amber-400"],
+          palette: ["#0d0802", "#451a03", "#92400e", "#d97706", "#f59e0b", "#fcd34d", "#fffbeb"],
+        },
+        violet: {
+          activeClasses: ["bg-violet-950", "text-violet-200", "border-violet-400"],
+          palette: ["#080412", "#2e1065", "#5b21b6", "#7c3aed", "#a855f7", "#d8b4fe", "#faf5ff"],
+        },
+      };
 
-/* network */
-const cv=document.getElementById('net'),cx=cv.getContext('2d');
-let W,H,pts=[],m={x:-999,y:-999};
-const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
-function size(){
-const d=devicePixelRatio||1;W=cv.clientWidth;H=cv.clientHeight;cv.width=W*d;cv.height=H*d;cx.setTransform(d,0,0,d,0,0);
-pts=Array.from({length:Math.min(80,Math.floor(W*H/17000))},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35}));
-}
-addEventListener('resize',size);size();
-const hero=cv.parentElement;
-hero.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();m.x=e.clientX-r.left;m.y=e.clientY-r.top});
-hero.addEventListener('pointerleave',()=>{m.x=m.y=-999});
-hero.addEventListener('pointerdown',()=>{pts.forEach(p=>{const dx=p.x-m.x,dy=p.y-m.y,d=Math.hypot(dx,dy)||1;if(d<240){p.vx+=dx/d*3;p.vy+=dy/d*3}})});
-function draw(){
-cx.clearRect(0,0,W,H);
-for(const p of pts){
-p.x+=p.vx;p.y+=p.vy;p.vx*=.985;p.vy*=.985;
-if(Math.abs(p.vx)<.12)p.vx+=(Math.random()-.5)*.02;
-if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;
-const dm=Math.hypot(p.x-m.x,p.y-m.y);
-if(dm<150){p.vx+=(m.x-p.x)*.0004;p.vy+=(m.y-p.y)*.0004}
-cx.fillStyle=dm<150?'#8c9cff':'#55555f';cx.beginPath();cx.arc(p.x,p.y,dm<150?2.3:1.5,0,7);cx.fill();
-}
-for(let i=0;i<pts.length;i++){
-for(let j=i+1;j<pts.length;j++){
-const d=Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y);
-if(d<120){cx.strokeStyle=`rgba(140,156,255,${(1-d/120)*.28})`;cx.beginPath();cx.moveTo(pts[i].x,pts[i].y);cx.lineTo(pts[j].x,pts[j].y);cx.stroke()}
-}
-const d=Math.hypot(pts[i].x-m.x,pts[i].y-m.y);
-if(d<150){cx.strokeStyle=`rgba(242,242,244,${(1-d/150)*.55})`;cx.beginPath();cx.moveTo(pts[i].x,pts[i].y);cx.lineTo(m.x,m.y);cx.stroke()}
-}
-if(!reduce)requestAnimationFrame(draw);
-}
-draw();
+      const ALL_ACTIVE_CLASSES = Object.values(COLOR_THEMES).flatMap((t) => t.activeClasses);
 
-/* reaction test */
-const box=document.getElementById('react-box'),bestEl=document.getElementById('best');
-const saveForm=document.getElementById('save'),saveMsg=document.getElementById('save-msg'),uname=document.getElementById('uname');
-let st='idle',tm,t0,best=null,lastMs=null;
-try{uname.value=localStorage.getItem('mindlab-name')||''}catch(e){}
-function react(){
-if(st==='idle'){st='wait';box.className='wait';box.textContent='Wait for blue…';saveForm.classList.remove('show');saveMsg.textContent='';
-tm=setTimeout(()=>{st='go';box.className='go';box.textContent='NOW!';t0=performance.now()},1200+Math.random()*2500)}
-else if(st==='wait'){clearTimeout(tm);st='idle';box.className='';box.textContent='Too early. Click to retry'}
-else{const ms=Math.round(performance.now()-t0);st='idle';box.className='';box.textContent=ms+' ms. Click to retry';
-lastMs=ms;saveForm.classList.add('show');saveMsg.textContent='Want it on the leaderboard? Pick a username.';
-if(best===null||ms<best){best=ms;bestEl.textContent='Best: '+best+' ms'}}
-}
-box.addEventListener('pointerdown',react);
-box.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();react()}});
+      // DOM lookups
+      const stage = document.getElementById("eye-stage");
+      const wrap = document.getElementById("canvas-wrap");
+      const canvas = document.getElementById("eye-canvas");
+      const btnFullscreen = document.getElementById("btn-fullscreen");
+      const fsLabel = document.getElementById("fs-label");
+      const colorButtons = Array.from(document.querySelectorAll(".color-btn"));
 
-/* live leaderboard (Firebase Realtime Database over REST + streaming) */
-const DB_URL = 'https://leaderboard-8280d-default-rtdb.firebaseio.com';
-const STORAGE_KEY='mindlab-leaderboard';
-let scores={},myName='';
-const rowsEl=document.getElementById('rows'),dot=document.getElementById('dot'),statusEl=document.getElementById('status');
+      if (!canvas || !wrap) return;
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (!ctx) return;
 
-function normalizeScores(raw){
-  if(!raw||typeof raw!=='object')return {};
-  const next={};
-  for(const [key,val] of Object.entries(raw)){
-    if(!val||typeof val!=='object')continue;
-    const name=typeof val.name==='string'?val.name.trim():'';
-    const ms=Number(val.ms);
-    if(!name||!Number.isFinite(ms))continue;
-    next[key]={name,ms,t:Number(val.t)||Date.now()};
-  }
-  return next;
-}
+      // Animation state
+      const state = {
+        activeColor: "cyan",
+        fallbackFullscreen: false,
+        cssWidth: 1200,
+        cssHeight: 600,
+        cellW: 10,
+        cellH: 10,
+        startTime: performance.now(),
+      };
 
-function loadLocalScores(){
-  try{
-    const saved=localStorage.getItem(STORAGE_KEY);
-    return normalizeScores(saved?JSON.parse(saved):{});
-  }catch(_){
-    return {};
-  }
-}
+      function clamp(val, lo, hi) {
+        return val < lo ? lo : val > hi ? hi : val;
+      }
 
-function saveLocalScores(){
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(scores));}catch(_){ }
-}
+      function getCurrentPalette() {
+        const theme = COLOR_THEMES[state.activeColor] || COLOR_THEMES.cyan;
+        return theme.palette;
+      }
 
-function render(){
-const list=Object.values(scores).filter(x=>x&&typeof x.ms==='number'&&typeof x.name==='string').sort((a,b)=>a.ms-b.ms).slice(0,10);
-if(!list.length){rowsEl.innerHTML='<li class="empty">No scores yet. Be the first.</li>';return}
-rowsEl.replaceChildren(...list.map((x,i)=>{
-const li=document.createElement('li');
-if(x.name.toLowerCase()===myName.toLowerCase())li.className='me';
-for(const [cls,txt] of [['rank',i+1],['',x.name],['',x.ms+' ms']]){const sp=document.createElement('span');if(cls)sp.className=cls;sp.textContent=txt;li.append(sp)}
-return li}));
-}
+      // Color button selection
+      function setColor(colorKey) {
+        if (!COLOR_THEMES[colorKey]) return;
+        state.activeColor = colorKey;
 
-function setAt(path,val){
-const p=path.split('/').filter(Boolean);
-if(!p.length){scores=normalizeScores(val||{});return}
-let o=scores;for(let i=0;i<p.length-1;i++){if(typeof o[p[i]]!=='object'||o[p[i]]===null)o[p[i]]={};o=o[p[i]]}
-if(val===null)delete o[p[p.length-1]];else o[p[p.length-1]]=val;
-}
+        colorButtons.forEach((btn) => {
+          const isSelected = btn.dataset.color === colorKey;
+          btn.classList.remove(...ALL_ACTIVE_CLASSES);
+          if (isSelected) {
+            btn.classList.remove("bg-neutral-900", "border-neutral-800");
+            btn.classList.add(...COLOR_THEMES[colorKey].activeClasses);
+          } else {
+            btn.classList.add("bg-neutral-900", "border-neutral-800");
+          }
+        });
+      }
 
-function handleFirebaseEvent(event){
-  try{
-    const payload=JSON.parse(event.data);
-    const path=payload&&typeof payload.path==='string'?payload.path:'/scores';
-    const data=payload&&payload.data ? payload.data : {};
-    if(path==='/'||path==='/scores'){scores=normalizeScores(data);render();return}
-    const parentPath=path.replace(/\/$/, '');
-    if(data&&typeof data==='object'&&!Array.isArray(data)){
-      for(const key of Object.keys(data)){
-        const childPath=parentPath+'/'+key;
-        const childValue=data[key];
-        if(childValue&&typeof childValue==='object'&&typeof childValue.ms==='number'&&typeof childValue.name==='string'){
-          setAt(childPath,childValue);
+      colorButtons.forEach((btn) => {
+        btn.addEventListener("click", () => setColor(btn.dataset.color));
+      });
+      setColor("cyan");
+
+      // Fullscreen handling with sandbox fallback
+      function getFsElement() {
+        return (
+          document.fullscreenElement ||
+          document.webkitFullscreenElement ||
+          document.mozFullScreenElement ||
+          document.msFullscreenElement ||
+          null
+        );
+      }
+
+      function updateFsButton() {
+        const active = Boolean(getFsElement()) || state.fallbackFullscreen;
+        if (btnFullscreen) btnFullscreen.setAttribute("aria-pressed", String(active));
+        if (fsLabel) fsLabel.textContent = active ? "Exit Fullscreen" : "Fullscreen";
+        if (stage) {
+          stage.classList.toggle("fixed", state.fallbackFullscreen && !getFsElement());
+          stage.classList.toggle("inset-0", state.fallbackFullscreen && !getFsElement());
+          stage.classList.toggle("z-50", state.fallbackFullscreen && !getFsElement());
         }
       }
-    }else{
-      setAt(path,data);
-    }
-    render();
-  }catch(_){ }
-}
 
-function connect(){
- if(!DB_URL){
-  scores=loadLocalScores();
-  render();
-  dot.classList.add('live');
-  statusEl.textContent='Local leaderboard';
-  return;
- }
- const loadInitial=fetch(DB_URL+'/scores.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
- loadInitial.then(data=>{scores=normalizeScores(data);render();}).catch(()=>{});
- const es=new EventSource(DB_URL+'/scores.json');
- es.addEventListener('put',handleFirebaseEvent);
- es.addEventListener('patch',handleFirebaseEvent);
- es.onopen=()=>{dot.classList.add('live');statusEl.textContent='Live'};
- es.onerror=()=>{dot.classList.remove('live');statusEl.textContent='Reconnecting…'};
-}
-connect();
+      async function toggleFullscreen() {
+        try {
+          const current = getFsElement();
+          if (current) {
+            if (document.exitFullscreen) await document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            state.fallbackFullscreen = false;
+            updateFsButton();
+            resize();
+            return;
+          }
 
-saveForm.addEventListener('submit',async e=>{
- e.preventDefault();
- const name=uname.value.trim();
- if(!/^[A-Za-z0-9_-]{3,16}$/.test(name)){saveMsg.textContent='Username: 3–16 letters, numbers, _ or -.';return}
- if(lastMs===null)return;
- myName=name;try{localStorage.setItem('mindlab-name',name)}catch(_){ }
+          if (state.fallbackFullscreen) {
+            state.fallbackFullscreen = false;
+            updateFsButton();
+            resize();
+            return;
+          }
 
- if(!DB_URL){
-  const existing=loadLocalScores();
-  const key=name.toLowerCase();
-  const current=existing[key];
-  if(current&&typeof current.ms==='number'&&current.ms<=lastMs){saveMsg.textContent='You already have a faster time ('+current.ms+' ms).';return}
-  existing[key]={name,ms:lastMs,t:Date.now()};
-  scores=existing;saveLocalScores();
-  saveMsg.textContent='Saved as '+name+'.';saveForm.classList.remove('show');render();
-  return;
- }
- const url=DB_URL+'/scores/'+name.toLowerCase()+'.json';
- try{
-  const cur=await (await fetch(url)).json();
-  if(cur&&typeof cur.ms==='number'&&cur.ms<=lastMs){saveMsg.textContent='You already have a faster time ('+cur.ms+' ms).';return}
-  const res=await fetch(url,{method:'PUT',body:JSON.stringify({name,ms:lastMs,t:Date.now()})});
-  if(!res.ok)throw new Error();
-  saveMsg.textContent='Saved as '+name+'.';saveForm.classList.remove('show');render();
- }catch(_){saveMsg.textContent='Could not save. Try again.'}
-});
-myName=uname.value;
+          const target = stage || canvas;
+          if (target && target.requestFullscreen) {
+            await target.requestFullscreen();
+          } else if (target && target.webkitRequestFullscreen) {
+            target.webkitRequestFullscreen();
+          } else {
+            state.fallbackFullscreen = true;
+            updateFsButton();
+            resize();
+          }
+        } catch (_err) {
+          state.fallbackFullscreen = !state.fallbackFullscreen;
+          updateFsButton();
+          resize();
+        }
+      }
 
-/* just-for-fun slot machine: jackpot odds are exactly 1 in 100,000 per spin */
-const slotReels=document.getElementById('slot-reels'),slotSpin=document.getElementById('slot-spin');
-const slotStatus=document.getElementById('slot-status');
-const slotSymbols=['7','✦','●','◆','♠','✧'];
-const slotCount=10;
-const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
-function showSlots(symbols){
-  slotReels.replaceChildren(...symbols.map(symbol=>{
-    const cell=document.createElement('span');
-    cell.className='slot-reel';
-    cell.textContent=symbol;
-    return cell;
-  }));
-}
-function secureRandomInt(max){
-  if(!window.crypto||!window.crypto.getRandomValues)throw new Error('Secure randomness is unavailable.');
-  const range=0x100000000;
-  const limit=Math.floor(range/max)*max;
-  const value=new Uint32Array(1);
-  do{window.crypto.getRandomValues(value)}while(value[0]>=limit);
-  return value[0]%max;
-}
-showSlots(Array(slotCount).fill('·'));
-slotSpin.addEventListener('click',()=>{
-  slotSpin.disabled=true;
-  slotStatus.textContent='Spinning…';
-  let jackpot;
-  try{jackpot=secureRandomInt(100000)===0}
-  catch(_){slotStatus.textContent='Secure random spin unavailable in this browser.';slotSpin.disabled=false;return}
-  const duration=reduceMotion?0:1000;
-  const animation=duration?setInterval(()=>{
-    showSlots(Array.from({length:slotCount},()=>slotSymbols[Math.floor(Math.random()*slotSymbols.length)]));
-  },75):null;
-  setTimeout(()=>{
-    if(animation)clearInterval(animation);
-    showSlots(Array.from({length:slotCount},()=>jackpot?'💎':slotSymbols[Math.floor(Math.random()*slotSymbols.length)]));
-    slotStatus.textContent=jackpot?'JACKPOT — ten diamonds!':'No jackpot this time. Try again?';
-    slotSpin.disabled=false;
-  },duration);
-});
+      if (btnFullscreen) {
+        btnFullscreen.addEventListener("click", toggleFullscreen);
+      }
 
-/* breathing */
-const orb=document.getElementById('orb'),lab=document.getElementById('orb-label'),bb=document.getElementById('breathe-btn');
-let on=false,ts=[];const ph=[['Breathe in',4,1.6],['Hold',4,1.6],['Breathe out',6,1]];
-function cyc(i=0){
-if(!on)return;const [t,s,k]=ph[i%3];
-lab.textContent=t;orb.style.transitionDuration=(t==='Hold'?0:s)+'s';orb.style.transform=`scale(${k})`;
-ts.push(setTimeout(()=>cyc(i+1),s*1000));
-}
-bb.addEventListener('click',()=>{
-on=!on;
-if(on){bb.textContent='Stop';cyc()}
-else{ts.forEach(clearTimeout);ts=[];bb.textContent='Start';lab.textContent='Ready';orb.style.transitionDuration='1s';orb.style.transform='scale(1)'}
-});
+      document.addEventListener("fullscreenchange", () => {
+        if (!getFsElement()) state.fallbackFullscreen = false;
+        updateFsButton();
+        requestAnimationFrame(resize);
+      });
 
-/* signup demo: connect to your own backend */
-document.getElementById('form').addEventListener('submit',e=>{
-e.preventDefault();document.getElementById('msg').textContent="You're in. First exercise arrives Monday.";e.target.reset();
-});
-</script>
+      document.addEventListener("webkitfullscreenchange", () => {
+        if (!getFsElement()) state.fallbackFullscreen = false;
+        updateFsButton();
+        requestAnimationFrame(resize);
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && state.fallbackFullscreen && !getFsElement()) {
+          state.fallbackFullscreen = false;
+          updateFsButton();
+          resize();
+        }
+      });
+
+      // Responsive canvas sizing
+      function resize() {
+        const rect = wrap.getBoundingClientRect();
+        const availW = Math.max(240, rect.width || window.innerWidth || 960);
+        const availH = Math.max(160, rect.height || window.innerHeight || 480);
+
+        // Fit 136x58 grid cleanly inside available box while preserving proportions
+        const targetRatio = (COLS * 13) / (ROWS * 16);
+        let drawW = availW;
+        let drawH = drawW / targetRatio;
+
+        if (drawH > availH) {
+          drawH = availH;
+          drawW = drawH * targetRatio;
+        }
+
+        const dpr = clamp(window.devicePixelRatio || 1, 1, 2.5);
+        state.cssWidth = Math.floor(drawW);
+        state.cssHeight = Math.floor(drawH);
+
+        canvas.style.width = `${state.cssWidth}px`;
+        canvas.style.height = `${state.cssHeight}px`;
+        canvas.width = Math.round(state.cssWidth * dpr);
+        canvas.height = Math.round(state.cssHeight * dpr);
+
+        state.cellW = state.cssWidth / COLS;
+        state.cellH = state.cssHeight / ROWS;
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const fontSize = Math.max(7, Math.floor(Math.min(state.cellW * 1.15, state.cellH * 0.98)));
+        ctx.font = `700 ${fontSize}px "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+      }
+
+      resize();
+      window.addEventListener("resize", resize);
+      if (typeof ResizeObserver !== "undefined") {
+        new ResizeObserver(resize).observe(wrap);
+      }
+
+      // Render loop
+      function render(now) {
+        const t = (now - state.startTime) / 1000;
+        const palette = getCurrentPalette();
+        const rampMax = RAMP.length - 1;
+        const palMax = palette.length - 2;
+
+        const gazeX = Math.sin(t * 0.85) * 0.16 + Math.cos(t * 0.37) * 0.05;
+        const gazeY = Math.sin(t * 0.62) * 0.10;
+        const pupilR = clamp(0.18 + 0.025 * Math.sin(t * 1.9), 0.06, 0.34);
+
+        const cycle = t % BLINK_PERIOD;
+        const blink = cycle < BLINK_DURATION ? Math.pow(Math.sin((cycle / BLINK_DURATION) * Math.PI), 1.6) : 0.0;
+
+        const glintX = -0.14 + gazeX * 0.45;
+        const glintY = -0.13 + gazeY * 0.45;
+
+        ctx.fillStyle = BG_COLOR;
+        ctx.fillRect(0, 0, state.cssWidth, state.cssHeight);
+
+        const cw = state.cellW;
+        const ch = state.cellH;
+
+        for (let r = 0; r < ROWS; r++) {
+          const ny = ((r + 0.5) / ROWS) * 2.0 - 1.0;
+          const cy = (r + 0.5) * ch;
+          const absNy = Math.abs(ny);
+
+          for (let c = 0; c < COLS; c++) {
+            const nx = (((c + 0.5) / COLS) * 2.0 - 1.0) * 1.45;
+            const cx = (c + 0.5) * cw;
+
+            const lidEnv = Math.pow(Math.max(0.0, 1.0 - Math.pow(nx / 1.3, 2)), 0.54);
+            const maxY = 0.74 * lidEnv * (1.0 - 0.94 * blink);
+            const distToLid = maxY - absNy;
+
+            let glyph = " ";
+            let fill = palette[0];
+
+            if (distToLid < 0.0) {
+              const lidShade = clamp(0.16 + 0.2 * (1.0 - absNy), 0.0, 0.5);
+              glyph = RAMP[Math.floor(lidShade * rampMax)];
+              fill = distToLid > -0.065 ? "#1e293b" : "#06080d";
+            } else {
+              const dx = nx - gazeX;
+              const dy = ny - gazeY;
+              const dist = Math.hypot(dx, dy);
+              const angle = Math.atan2(dy, dx);
+              const edgeShadow = clamp(distToLid / 0.16, 0.25, 1.0);
+
+              const glintD = Math.hypot((nx - glintX) * 1.08, (ny - glintY) * 1.08);
+              if (glintD < 0.095) {
+                glyph = "@";
+                fill = "#ffffff";
+              } else if (dist < pupilR) {
+                const ring = Math.abs(dist - pupilR * 0.85) < 0.016 ? 0.15 : 0.0;
+                const intensity = clamp(0.08 + ring, 0.0, 1.0);
+                glyph = RAMP[Math.floor(intensity * rampMax)];
+                fill = ring > 0 ? "#1e293b" : "#000000";
+              } else if (dist < IRIS_R) {
+                const fiber = 0.5 + 0.5 * Math.sin(angle * 28.0 + dist * 24.0 + t * 0.6);
+                const radial = 1.0 - ((dist - pupilR) / Math.max(0.001, IRIS_R - pupilR)) * 0.45;
+                const limbal = (IRIS_R - dist) < 0.04 ? 0.55 : 1.0;
+                const intensity = clamp((0.35 + 0.55 * fiber) * radial * limbal * edgeShadow, 0.1, 0.95);
+                glyph = RAMP[Math.floor(intensity * rampMax)];
+                const colorIdx = clamp(Math.floor(intensity * palMax) + 1, 1, palMax);
+                fill = palette[colorIdx];
+              } else {
+                const sphereZ = Math.max(0.0, 1.0 - Math.pow(nx / 1.32, 2) - Math.pow(ny / 0.78, 2));
+                const veinHint = 0.04 * Math.max(0.0, Math.sin(angle * 14.0 + dist * 9.0));
+                const intensity = clamp((0.45 + 0.45 * Math.sqrt(sphereZ) - veinHint) * edgeShadow, 0.15, 0.92);
+                glyph = RAMP[Math.floor(intensity * rampMax)];
+                fill = intensity > 0.68 ? "#e2e8f0" : "#94a3b8";
+              }
+            }
+
+            if (glyph !== " ") {
+              ctx.fillStyle = fill;
+              ctx.fillText(glyph, cx, cy);
+            }
+          }
+        }
+
+        requestAnimationFrame(render);
+      }
+
+      window.addEventListener("load", () => {
+        resize();
+        state.startTime = performance.now();
+        requestAnimationFrame(render);
+      });
+    })();
+  </script>
 </body>
 </html>
