@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#000000" />
-  <title>Bloom</title>
+  <title>Eye to Space</title>
   <style>
     :root {
       color-scheme: dark;
@@ -30,7 +30,7 @@
   </style>
 </head>
 <body>
-  <canvas id="art" aria-label="A glowing ASCII flower slowly blooming in darkness"></canvas>
+  <canvas id="art" aria-label="A detailed animated ASCII eye that zooms into a star field and a red flower blooming inside the pupil"></canvas>
   <script>
     (() => {
       "use strict";
@@ -40,56 +40,80 @@
       if (!ctx) return;
 
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const frameInterval = 1000 / 60;
-      const glyphs = " .,:;!+*x%#@";
-      const palette = [
-        [16, 8, 34],
-        [43, 15, 66],
-        [92, 23, 105],
-        [151, 34, 128],
-        [211, 59, 132],
-        [250, 103, 134],
-        [255, 151, 144],
-        [255, 194, 158],
-        [255, 229, 191],
+      const frameInterval = 1000 / 40;
+      const zoomInStart = 5.4;
+      const zoomInDuration = 28;
+      const finalHoldDuration = 10;
+      const zoomOutDuration = 7;
+      const resetHoldDuration = 20;
+      const cycleDuration = zoomInStart + zoomInDuration + finalHoldDuration + zoomOutDuration + resetHoldDuration;
+      const glyphs = " -_~=/#";
+      const skinPalette = [
+        [25, 16, 23],
+        [72, 39, 43],
+        [139, 77, 67],
+        [205, 132, 101],
+        [246, 194, 146],
+        [255, 224, 185],
       ];
-      const pollenPalette = [
-        [93, 49, 18],
-        [178, 103, 35],
-        [237, 177, 80],
-        [255, 226, 151],
+      const scleraPalette = [
+        [57, 48, 57],
+        [123, 108, 108],
+        [196, 177, 157],
+        [239, 222, 194],
+        [255, 243, 219],
       ];
-      const petalLayers = [
-        { count: 9, radius: 0.53, rotation: 0.08, shade: 0.02 },
-        { count: 8, radius: 0.43, rotation: 0.31, shade: 0.08 },
-        { count: 7, radius: 0.335, rotation: -0.15, shade: 0.14 },
-        { count: 6, radius: 0.245, rotation: 0.22, shade: 0.2 },
+      const irisPalette = [
+        [30, 22, 17],
+        [83, 51, 25],
+        [142, 89, 35],
+        [204, 143, 54],
+        [255, 213, 112],
       ];
-      const sparks = Array.from({ length: 64 }, (_, i) => ({
+      const pupilPalette = [
+        [3, 5, 10],
+        [8, 12, 18],
+        [18, 24, 29],
+      ];
+      const flowerPalette = [
+        [32, 3, 5],
+        [93, 5, 12],
+        [163, 12, 20],
+        [220, 32, 35],
+        [255, 91, 67],
+        [255, 173, 100],
+      ];
+      const flowerCenterPalette = [
+        [96, 35, 7],
+        [184, 93, 13],
+        [255, 188, 54],
+        [255, 232, 128],
+      ];
+      const spaceStars = Array.from({ length: 720 }, (_, i) => ({
         x: random(i + 11) * 2 - 1,
-        y: random(i + 73) * 2 - 1,
-        phase: random(i + 131) * Math.PI * 2,
-        speed: 0.12 + random(i + 197) * 0.34,
-        size: 0.4 + random(i + 263) * 1.15,
+        y: random(i + 113) * 2 - 1,
+        depth: 0.08 + random(i + 227) * 0.92,
+        brightness: 0.12 + random(i + 331) * 0.88,
+        phase: random(i + 443) * Math.PI * 2,
       }));
       const state = {
         width: 0,
         height: 0,
         dpr: 1,
-        cellW: 8,
-        cellH: 15,
         fontSize: 12,
+        cellW: 7,
+        cellH: 13,
         time: 0,
         lastFrame: 0,
       };
 
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
       function random(seed) {
         const n = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
         return n - Math.floor(n);
-      }
-
-      function clamp(value, min, max) {
-        return Math.max(min, Math.min(max, value));
       }
 
       function smoothstep(value) {
@@ -97,21 +121,28 @@
         return t * t * (3 - 2 * t);
       }
 
+      function segmentDistance(x, y, x1, y1, x2, y2) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const lengthSquared = dx * dx + dy * dy;
+        const progress = lengthSquared ? clamp(((x - x1) * dx + (y - y1) * dy) / lengthSquared, 0, 1) : 0;
+        return Math.hypot(x - (x1 + progress * dx), y - (y1 + progress * dy));
+      }
+
       function resize() {
         state.width = window.innerWidth;
         state.height = window.innerHeight;
-        state.dpr = Math.min(window.devicePixelRatio || 1, 2);
+        state.dpr = Math.min(window.devicePixelRatio || 1, 1.5);
         canvas.width = Math.round(state.width * state.dpr);
         canvas.height = Math.round(state.height * state.dpr);
         ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
 
-        const fontSize = clamp(Math.min(state.width / 138, state.height / 58), 6, 15);
-        state.fontSize = fontSize;
-        ctx.font = `600 ${fontSize}px "Courier New", monospace`;
+        state.fontSize = clamp(Math.min(state.width / 110, state.height / 48), 7, 16);
+        state.cellW = state.fontSize * 0.68;
+        state.cellH = state.fontSize * 1.1;
+        ctx.font = `600 ${state.fontSize}px "Courier New", monospace`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        state.cellW = fontSize * 0.56;
-        state.cellH = fontSize * 0.96;
       }
 
       function colorAt(colors, amount, alpha = 1) {
@@ -126,173 +157,253 @@
         return `rgba(${r},${g},${blue},${alpha})`;
       }
 
+      function shadeGlyph(amount) {
+        return glyphs[Math.min(glyphs.length - 1, Math.floor(clamp(amount, 0, 0.9999) * glyphs.length))];
+      }
+
       function render(timestamp) {
         if (!reducedMotion && state.lastFrame && timestamp - state.lastFrame < frameInterval) {
           requestAnimationFrame(render);
           return;
         }
+
         if (!reducedMotion) {
           const delta = state.lastFrame ? Math.min((timestamp - state.lastFrame) / 1000, 0.05) : 0;
           state.time += delta;
         } else {
-          state.time = 9;
+          state.time = 8;
         }
         state.lastFrame = timestamp;
 
-        const t = state.time;
-        const bloom = smoothstep(t / 4.8);
-        const breath = reducedMotion ? 1 : 0.985 + Math.sin(t * 0.72) * 0.015;
-        const scale = Math.min(state.height * 0.76, state.width * 0.72);
-        const centerX = state.width * 0.5;
-        const centerY = state.height * 0.5;
-        const wind = reducedMotion
-          ? 0
-          : (Math.sin(t * 0.52) + Math.sin(t * 1.17 + 1.4) * 0.32)
-            * (0.82 + 0.18 * Math.max(0, Math.sin(t * 0.21 + 0.8)));
-        const cols = Math.ceil(state.width / state.cellW);
-        const rows = Math.ceil(state.height / state.cellH);
-        const halfCols = cols / 2;
-        const halfRows = rows / 2;
-        const yaw = reducedMotion ? 0.2 : Math.sin(t * 0.2) * 0.36 + wind * 0.05;
-        const pitch = 0.12 + (reducedMotion ? 0 : Math.sin(t * 0.27) * 0.035);
+        const t = state.time % cycleDuration;
+        const blinkTime = t - 4;
+        const blinkAmount = reducedMotion || blinkTime < 0 || blinkTime > 0.36 ? 0
+          : blinkTime < 0.09 ? smoothstep(blinkTime / 0.09)
+            : blinkTime < 0.12 ? 1
+              : 1 - smoothstep((blinkTime - 0.12) / 0.24);
+        const eyeOpen = Math.max(0.015, smoothstep((t - 0.9) / 2.4) * (1 - 0.985 * blinkAmount));
+        const zoomIn = smoothstep((t - zoomInStart) / zoomInDuration);
+        const zoomOut = smoothstep((t - zoomInStart - zoomInDuration - finalHoldDuration) / zoomOutDuration);
+        const zoomProgress = zoomIn * (1 - zoomOut);
+        const idleMotion = smoothstep(t / 5.4);
+        const zoom = Math.exp(Math.log(14) * zoomProgress) * (1 + 0.05 * idleMotion + 0.004 * Math.sin(t * 0.9));
+        const irisScreenRadius = 0.2 * zoom * Math.min(state.height * 0.49, state.width * 0.44) / state.height;
+        const eyeFade = 1 - smoothstep((irisScreenRadius - 0.72) / 0.32);
+        const starAmount = smoothstep((t - 5.4) / 4.5);
+        const flowerAmount = smoothstep((t - 8.9) / 8);
+        const flowerOpen = smoothstep((t - 10) / 11);
+        const flowerScale = 0.17 * Math.min(1.15, 0.085 * zoom ** 1.25);
+        const gazeFade = 1 - zoomProgress;
+        const gazeX = 0.018 * Math.sin(t * 1.3) * gazeFade;
+        const gazeY = 0.012 * Math.sin(t * 1.1 + 1) * gazeFade - 0.03 * blinkAmount;
+        const yaw = reducedMotion ? 0.04 : Math.sin(t * 0.19) * 0.12;
+        const pitch = 0.035 + (reducedMotion ? 0 : Math.sin(t * 0.27) * 0.016);
         const cosYaw = Math.cos(yaw);
         const sinYaw = Math.sin(yaw);
         const cosPitch = Math.cos(pitch);
         const sinPitch = Math.sin(pitch);
-        const focalLength = 3.8;
+        const focalLength = 4;
+        const centerX = state.width * 0.5;
+        const centerY = state.height * 0.5;
+        const scale = Math.min(state.height * 0.49, state.width * 0.44);
+        const cols = Math.ceil(state.width / state.cellW);
+        const rows = Math.ceil(state.height / state.cellH);
+        const halfCols = cols / 2;
+        const halfRows = rows / 2;
+        const eyeBoundsX = eyeFade > 0.01 ? (zoom < 3.4 ? 1.18 : 0.64) * zoom * scale : 0;
+        const eyeBoundsY = eyeFade > 0.01 ? (zoom < 3.4 ? 0.72 : 0.58) * zoom * scale : 0;
+        const flowerBounds = flowerAmount > 0.002 ? flowerScale * 1.6 * state.height : 0;
+        const boundsX = Math.max(eyeBoundsX, flowerBounds, irisScreenRadius * state.height);
+        const boundsY = Math.max(eyeBoundsY, flowerBounds, irisScreenRadius * state.height);
+        const colStart = clamp(Math.floor(halfCols - boundsX / state.cellW) - 1, 0, cols);
+        const colEnd = clamp(Math.ceil(halfCols + boundsX / state.cellW) + 1, 0, cols);
+        const rowStart = clamp(Math.floor(halfRows - boundsY / state.cellH) - 1, 0, rows);
+        const rowEnd = clamp(Math.ceil(halfRows + boundsY / state.cellH) + 1, 0, rows);
         const projected = [];
 
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, state.width, state.height);
 
-        for (const spark of sparks) {
-          const drift = reducedMotion ? 0 : Math.sin(t * spark.speed + spark.phase);
-          const x = (spark.x + drift * 0.035 + wind * 0.018) * state.width * 0.49 + centerX;
-          const y = (spark.y + Math.cos(t * spark.speed * 0.8 + spark.phase) * 0.025) * state.height * 0.48 + centerY;
-          const glint = 0.2 + (0.5 + 0.5 * Math.sin(t * 1.4 + spark.phase)) * 0.58;
-          ctx.fillStyle = `rgba(255,199,177,${reducedMotion ? 0.36 : glint})`;
-          ctx.fillText(spark.size > 1.15 ? "." : "·", x, y);
-        }
-
-        for (let row = 0; row < rows; row++) {
-          const y = (row - halfRows) * state.cellH;
-          const ny = (y - centerY * 0.02) / scale;
-          for (let col = 0; col < cols; col++) {
-            const x = (col - halfCols) * state.cellW;
-            const nx = (x - centerX * 0.02) / scale;
+        for (let row = rowStart; row < rowEnd; row++) {
+          const screenY = (row - halfRows) * state.cellH;
+          const py = screenY / scale;
+          for (let col = colStart; col < colEnd; col++) {
+            const screenX = (col - halfCols) * state.cellW;
+            const px = screenX / scale;
+            const x = px / zoom;
+            const y = py / zoom;
+            const absX = Math.abs(x);
             let glyph = " ";
             let color = "";
-            let depth = 0;
-            const flowerX = nx - wind * 0.018;
-            const flowerY = ny;
-            const radius = Math.hypot(flowerX, flowerY);
-            const angle = Math.atan2(flowerY, flowerX);
+            let depth = -0.02;
+            let surface = 0;
 
-            if (bloom > 0.015) {
-              for (let layerIndex = 0; layerIndex < petalLayers.length; layerIndex++) {
-                const layer = petalLayers[layerIndex];
-                const layerBloom = smoothstep((t - layerIndex * 0.42) / 4.8);
-                const radialWind = clamp(radius / Math.max(0.01, layer.radius), 0, 1);
-                const windRipple = wind * radialWind;
-                const rotatedAngle = angle - layer.rotation - windRipple * 0.12;
-                const petalWave = (0.79 + 0.21 * Math.cos(rotatedAngle * layer.count)) * (1 + windRipple * 0.025);
-                const petalEdge = layer.radius * petalWave * layerBloom * breath;
-                if (radius >= petalEdge) continue;
+            const halfArc = Math.sqrt(Math.max(0, 1 - (x / 1.12) ** 2));
+            const outerTop = -0.035 - 0.55 * halfArc;
+            const outerBottom = -0.035 + 0.43 * halfArc;
+            const apertureTop = -0.025 - 0.43 * halfArc * eyeOpen;
+            const apertureBottom = -0.025 + 0.34 * halfArc * eyeOpen;
+            const nearEye = zoom < 3.4;
+            const inEyeFrame = nearEye && eyeFade > 0.01 && absX < 1.12 && y > outerTop && y < outerBottom;
+            const inAperture = nearEye && eyeFade > 0.01 && absX < 1.1 && y > apertureTop && y < apertureBottom;
+            const lidMotion = smoothstep((blinkAmount - 0.08) / 0.92);
+            const upperLid = Math.abs(y - outerTop) < 0.028 || Math.abs(y - apertureTop) < 0.018;
+            const lowerLid = Math.abs(y - outerBottom) < 0.026 || Math.abs(y - apertureBottom) < 0.018;
+            const irisX = x - gazeX - 0.045;
+            const irisY = y - gazeY + 0.025;
+            const irisRadius = Math.hypot(irisX / 0.52, irisY / (0.5 * eyeOpen));
+            const irisAngle = Math.atan2(irisY, irisX);
+            const irisStriation = Math.sin(irisAngle * 22 + Math.sin(irisAngle * 7) * 1.4 + irisRadius * 5);
+            const irisFiber = Math.sin(irisAngle * 54 + Math.sin(irisAngle * 9) * 2.2 + irisRadius * 8);
+            const irisBand = Math.sin(irisRadius * 31 + Math.sin(irisAngle * 5) * 1.2);
+            const pupilRadius = Math.hypot(irisX / 0.2, irisY / (0.2 * eyeOpen));
+            const irisVisible = eyeFade > 0.01 && irisRadius < 1.12 && (nearEye ? inAperture : true);
+            const pupilVisible = irisVisible && pupilRadius < 1;
+            const scleraVein = inAperture && absX > 0.43 && absX < 0.98 && !irisVisible
+              ? Math.min(
+                Math.abs(y - (0.06 + 0.035 * Math.sin(absX * 18))),
+                Math.abs(y - (-0.08 + 0.026 * Math.sin(absX * 23 + 1.2))),
+                Math.abs(y - (0.015 + 0.02 * Math.sin(absX * 31 + 2.1)))
+              )
+              : Infinity;
+            const browLine = nearEye ? Math.min(
+              segmentDistance(x, y, -1.08, -0.28, -0.8, -0.52),
+              segmentDistance(x, y, -0.8, -0.52, -0.4, -0.66),
+              segmentDistance(x, y, -0.4, -0.66, 0, -0.7),
+              segmentDistance(x, y, 0, -0.7, 0.4, -0.66),
+              segmentDistance(x, y, 0.4, -0.66, 0.8, -0.52),
+              segmentDistance(x, y, 0.8, -0.52, 1.08, -0.28)
+            ) : Infinity;
+            const tearDuct = Math.hypot((x + 0.91) / 0.1, (y + 0.025) / 0.075);
+            const glintOne = Math.hypot((irisX + 0.16) / 0.075, (irisY + 0.2) / 0.1);
+            const glintTwo = Math.hypot((irisX - 0.17) / 0.04, (irisY - 0.16) / 0.055);
+            const lidCreaseY = apertureTop - 0.085 * halfArc;
+            const lidCrease = Math.abs(y - lidCreaseY) < 0.018 && absX < 0.86 * halfArc;
+            const lashIndex = Math.round((x + 0.56) / 0.16);
+            const lashX = -0.56 + lashIndex * 0.16;
+            const lashArc = Math.sqrt(Math.max(0, 1 - (lashX / 1.12) ** 2));
+            const lashY = -0.025 - 0.43 * lashArc * (1 - blinkAmount);
+            const lashDistance = lashIndex >= 0 && lashIndex <= 7 && absX < 0.72
+              ? segmentDistance(x, y, lashX, lashY, lashX + (lashX < 0 ? -0.035 : 0.035), lashY + 0.06 * (1 - blinkAmount * 0.35))
+              : Infinity;
 
-                const radial = radius / Math.max(0.01, petalEdge);
-                const nearestPetal = Math.round(rotatedAngle / (Math.PI * 2 / layer.count)) * (Math.PI * 2 / layer.count) + layer.rotation;
-                const angleFromVein = Math.atan2(Math.sin(angle - nearestPetal), Math.cos(angle - nearestPetal));
-                const veinDistance = Math.abs(Math.sin(angleFromVein)) * radius;
-                const folds = Math.abs(Math.sin(angleFromVein * 6.5 + radial * 4));
-                const edgeLight = Math.exp(-Math.pow((radial - 0.88) * 13, 2));
-                const petalRidge = Math.exp(-Math.pow((radial - (0.48 + 0.08 * Math.sin(angleFromVein * 9))) * 28, 2));
-                const fineRidge = Math.exp(-Math.pow((radial - (0.7 + 0.035 * Math.sin(angleFromVein * 15))) * 48, 2));
-                const shimmer = 0.5 + 0.5 * Math.sin(t * 0.85 + nearestPetal * 3 + radial * 5 + wind * 0.5);
-                const breezeFold = Math.sin(angle * 2.5 - t * 1.35 + radial * 4) * wind * radial * 0.09;
-                const density = clamp((1 - radial) * 0.54 + folds * 0.15 + edgeLight * 0.17 + petalRidge * 0.16 + fineRidge * 0.12 + shimmer * 0.11 + breezeFold, 0, 1);
-                const brightness = clamp(0.17 + (1 - radial) * 0.32 + folds * 0.11 + edgeLight * 0.17 + petalRidge * 0.21 + fineRidge * 0.15 + shimmer * 0.1 - layer.shade, 0, 1);
-                const index = Math.min(glyphs.length - 1, 2 + Math.floor(density * 9));
-                glyph = glyphs[index];
-                const petalHue = clamp(brightness + 0.11 * Math.sin(nearestPetal * 2.4) + (layerIndex === 0 ? 0.06 : 0), 0, 1);
-                color = colorAt(palette, petalHue);
-                const petalDome = 0.3 * (1 - radial * radial);
-                const petalFold = 0.04 * Math.cos(angleFromVein * 8 + radial * 5);
-                const petalRim = -0.075 * Math.exp(-Math.pow((radial - 0.94) * 16, 2));
-                depth = 0.015 + layerIndex * 0.028 + petalDome + petalFold + petalRim;
-
-                if (radial > 0.15 && radial < 0.94) {
-                  const centerVein = veinDistance < 0.0075;
-                  const branchSide = angleFromVein < 0 ? -1 : 1;
-                  const branchWave = 0.085 + radial * 0.24 + 0.025 * Math.sin(radial * 30 + nearestPetal * 5);
-                  const branchOffset = angleFromVein - branchSide * branchWave;
-                  const fineVein = Math.abs(branchOffset) * radius < 0.008 && radial > 0.2 && radial < 0.88;
-                  const ridgeLine = fineRidge > 0.82 && folds > 0.45;
-                  if (centerVein || fineVein || ridgeLine) {
-                    glyph = centerVein ? (radial > 0.72 ? ":" : "+") : fineVein ? "." : "'";
-                    color = colorAt(palette, Math.min(1, brightness + (centerVein ? 0.18 : fineVein ? 0.12 : 0.08)));
-                  } else if (edgeLight > 0.48) {
-                    glyph = ".";
-                    color = colorAt(palette, Math.min(1, brightness + 0.14));
-                  }
-                }
-              }
+            if (inEyeFrame) {
+              const skinGrain = Math.sin(x * 31 + Math.sin(y * 17)) * 0.022
+                + Math.sin(y * 43 - x * 13) * 0.012;
+              const lidLight = clamp(0.28 + 0.25 * halfArc + (1 - Math.abs(y) / 0.75) * 0.18
+                + Math.sin(x * 9 + y * 13) * 0.035 + skinGrain, 0.1, 0.84);
+              glyph = shadeGlyph(lidLight);
+              color = colorAt(skinPalette, lidLight);
+              depth = 0.04 + halfArc * 0.07;
+              surface = lidLight;
             }
 
-            const coreRadius = Math.hypot(flowerX, flowerY);
-            if (coreRadius < 0.12 * bloom && bloom > 0.1) {
-              const stamenCount = 17;
-              const stamenAngle = Math.round(angle * stamenCount / (Math.PI * 2)) * (Math.PI * 2 / stamenCount);
-              const stamenOffset = Math.atan2(Math.sin(angle - stamenAngle), Math.cos(angle - stamenAngle));
-              const stamenDistance = Math.abs(Math.sin(stamenOffset)) * coreRadius;
-              const stamenTipDistance = Math.abs(coreRadius - 0.102 * bloom);
-              const seedCount = 21;
-              const seedStep = (Math.PI * 2) / seedCount;
-              const seedIndex = Math.round(angle / seedStep);
-              const seedAngle = seedIndex * seedStep;
-              const seedRadius = 0.058 + Math.sin(seedIndex * 12.7) * 0.008 + Math.cos(seedIndex * 4.3) * 0.004;
-              const seedDistance = Math.hypot(
-                coreRadius - seedRadius,
-                Math.sin(angle - seedAngle) * coreRadius
-              );
-              const coreRing = Math.abs(coreRadius - 0.032) < 0.005;
-              if (coreRadius > 0.068 * bloom && coreRadius < 0.12 * bloom && stamenDistance < 0.0038 && stamenTipDistance < 0.028 * bloom) {
-                glyph = stamenTipDistance < 0.008 * bloom ? "*" : ".";
-                color = colorAt(pollenPalette, 0.72 + 0.24 * Math.sin(stamenAngle * 3 + t));
-                depth = 0.27 + (1 - stamenTipDistance / (0.025 * bloom)) * 0.025;
-              } else if (seedDistance < 0.012) {
-                glyph = seedDistance < 0.006 ? "@" : "*";
-                color = colorAt(pollenPalette, 0.65 + 0.32 * Math.sin(t * 1.4 + seedIndex));
-                depth = 0.29;
-              } else if (coreRing) {
-                glyph = (row + col) % 2 === 0 ? "." : ":";
-                color = colorAt(pollenPalette, 0.5 + coreRadius);
-                depth = 0.26;
-              } else {
-                glyph = (row + col) % 3 === 0 ? "x" : "+";
-                color = colorAt(palette, 0.88 + 0.1 * Math.sin(t * 2));
-                depth = 0.24;
-              }
+            if (inAperture) {
+              const scleraShade = clamp(0.38 + 0.34 * halfArc - y * 0.28
+                + Math.sin(x * 12 + y * 8) * 0.025 + Math.sin(x * 29 - y * 21) * 0.012, 0.12, 0.94);
+              glyph = shadeGlyph(scleraShade);
+              color = colorAt(scleraPalette, scleraShade);
+              depth = 0.13 + halfArc * 0.04;
+              surface = scleraShade;
             }
 
-            if (glyph !== " ") {
-              const localX = x / scale;
-              const localY = y / scale;
-              const rotatedX = localX * cosYaw - depth * sinYaw;
-              const rotatedZ = localX * sinYaw + depth * cosYaw;
-              const tiltedY = localY * cosPitch - rotatedZ * sinPitch;
-              const viewDepth = localY * sinPitch + rotatedZ * cosPitch;
-              const perspective = focalLength / (focalLength - viewDepth);
-              const shade = clamp(0.8 + viewDepth * 0.56 + depth * 0.18, 0.48, 1.12);
-              projected.push({
-                glyph,
-                color,
-                depth: viewDepth,
-                x: centerX + rotatedX * scale * perspective,
-                y: centerY + tiltedY * scale * perspective,
-                size: perspective,
-                shade,
-              });
+            if (scleraVein < 0.014) {
+              const veinShade = clamp(0.34 + (1 - scleraVein / 0.014) * 0.2, 0.15, 0.58);
+              glyph = scleraVein < 0.006 ? (y > 0 ? "/" : "\\") : "~";
+              color = colorAt(skinPalette, veinShade);
+              depth = 0.17;
+              surface = veinShade;
             }
+
+            if (irisVisible) {
+              const irisShade = clamp(0.36 + (1 - irisRadius) * 0.34 + irisStriation * 0.1
+                + irisFiber * 0.08 + irisBand * 0.045, 0.08, 0.98);
+              const radialFiber = Math.abs(irisFiber) > 0.78;
+              glyph = irisRadius > 1.035 ? (irisAngle < 0 ? "\\" : "/")
+                : radialFiber ? (irisFiber > 0 ? "|" : "/") : shadeGlyph(irisShade);
+              color = colorAt(irisPalette, irisShade);
+              depth = 0.19 + (1 - irisRadius) * 0.08;
+              surface = irisShade;
+            }
+
+            if (pupilVisible) {
+              const pupilShade = 0.15 + Math.max(0, 1 - pupilRadius) * 0.28;
+              glyph = pupilRadius > 0.82 ? "|" : shadeGlyph(pupilShade);
+              color = colorAt(pupilPalette, pupilShade);
+              depth = 0.28 + (1 - pupilRadius) * 0.04;
+              surface = 0.2;
+            }
+
+            if (irisVisible && glintOne < 1) {
+              glyph = glintOne < 0.45 ? "=" : "\"";
+              color = colorAt(scleraPalette, 0.98);
+              depth = 0.34;
+              surface = 1;
+            }
+
+            if (irisVisible && glintTwo < 1) {
+              glyph = "~";
+              color = colorAt(scleraPalette, 0.9);
+              depth = 0.35;
+              surface = 0.94;
+            }
+
+            if ((upperLid || lowerLid) && inEyeFrame) {
+              const lidEdge = upperLid ? outerTop : outerBottom;
+              const lidShade = upperLid ? 0.78 : 0.58;
+              glyph = upperLid ? (absX > 0.8 ? "/" : "_") : "~";
+              if (Math.abs(y - lidEdge) < 0.015) glyph = upperLid ? "=" : "-";
+              color = colorAt(skinPalette, lidShade);
+              depth = 0.24;
+              surface = lidShade;
+            }
+
+            if (lidCrease && inEyeFrame) {
+              glyph = lidMotion > 0.35 ? (x < 0 ? "\\" : "/") : "~";
+              color = colorAt(skinPalette, 0.42 + lidMotion * 0.24);
+              depth = 0.18 + lidMotion * 0.04;
+              surface = 0.54 + lidMotion * 0.16;
+            }
+
+            if (lashDistance < 0.022 && inEyeFrame && eyeOpen > 0.16) {
+              glyph = lashDistance < 0.009 ? (x < lashX ? "\\" : "/") : "_";
+              color = colorAt(skinPalette, 0.12 + (1 - lashDistance / 0.022) * 0.18);
+              depth = 0.25;
+              surface = 0.25;
+            }
+
+            if (browLine < 0.035 && y < outerTop) {
+              const browShade = clamp(0.16 + (1 - browLine / 0.035) * 0.32, 0.12, 0.55);
+              glyph = browLine < 0.012 ? (x < 0 ? "\\" : "/") : shadeGlyph(browShade);
+              color = colorAt(skinPalette, browShade);
+              depth = 0.08;
+              surface = browShade;
+            }
+
+            if (tearDuct < 1 && inEyeFrame) {
+              glyph = tearDuct < 0.5 ? ">" : "=";
+              color = colorAt(scleraPalette, 0.82);
+              depth = 0.2;
+              surface = 0.82;
+            }
+
+            if (glyph === " " || eyeFade <= 0.01) continue;
+
+            const rotatedX = px * cosYaw - depth * sinYaw;
+            const rotatedZ = px * sinYaw + depth * cosYaw;
+            const tiltedY = py * cosPitch - rotatedZ * sinPitch;
+            const viewDepth = py * sinPitch + rotatedZ * cosPitch;
+            const perspective = focalLength / (focalLength - viewDepth);
+            const light = clamp(0.62 + surface * 0.42 + viewDepth * 0.32 + depth * 0.12, 0.35, 1.08);
+            projected.push({
+              glyph,
+              color: color.replace(/[\d.]+\)$/, `${eyeFade * light})`),
+              depth: viewDepth,
+              x: centerX + rotatedX * scale * perspective,
+              y: centerY + tiltedY * scale * perspective,
+              size: perspective,
+              light,
+            });
           }
         }
 
@@ -304,15 +415,140 @@
             ctx.font = `600 ${fontSize}px "Courier New", monospace`;
             lastFontSize = fontSize;
           }
-          ctx.fillStyle = item.color.replace(/[\d.]+\)$/, `${item.shade})`);
+          ctx.fillStyle = item.color.replace(/[\d.]+\)$/, `${item.light})`);
           ctx.fillText(item.glyph, item.x, item.y);
         }
 
-        ctx.font = `600 ${state.fontSize}px "Courier New", monospace`;
+        const pupilScreenX = centerX + (gazeX + 0.045) * zoom * scale;
+        const pupilScreenY = centerY + (gazeY - 0.025) * zoom * scale;
+        const pupilScreenRadiusX = Math.max(1, 0.2 * zoom * scale);
+        const pupilScreenRadiusY = Math.max(1, 0.2 * eyeOpen * zoom * scale);
+        if (starAmount > 0.002 || flowerAmount > 0.002) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.ellipse(pupilScreenX, pupilScreenY, pupilScreenRadiusX, pupilScreenRadiusY, 0, 0, Math.PI * 2);
+          ctx.clip();
+
+          if (starAmount > 0.002) {
+            ctx.font = `600 ${Math.max(5, Math.round(state.fontSize * 0.72))}px "Courier New", monospace`;
+            for (let i = 0; i < spaceStars.length; i++) {
+              const star = spaceStars[i];
+              const twinkle = 0.8 + 0.2 * Math.sin(t * (1 + star.brightness * 2) + star.phase);
+              const spread = (0.025 + 1.45 * starAmount) / star.depth;
+              const sx = pupilScreenX + star.x * spread * scale;
+              const sy = pupilScreenY + star.y * spread * scale;
+              if (sx < 0 || sx > state.width || sy < 0 || sy > state.height) continue;
+              ctx.fillStyle = colorAt(irisPalette, 0.28 + star.brightness * 0.54, starAmount * star.brightness * twinkle);
+              const starGlyph = star.brightness > 0.94 ? "+" : star.brightness > 0.72 ? "*" : star.brightness > 0.4 ? "x" : "/";
+              ctx.fillText(starGlyph, sx, sy);
+            }
+          }
+
+          if (!reducedMotion && t > 29.4) {
+            const shootIndex = Math.floor((t - 29.4) / 3.7);
+            const shootPhase = (t - 29.4) % 3.7;
+            if (shootPhase < 0.9) {
+              const startX = pupilScreenX + (random(shootIndex + 901) * 1.4 - 0.7) * scale;
+              const startY = pupilScreenY - scale * (0.55 + random(shootIndex + 977) * 0.3);
+              ctx.font = `600 ${state.fontSize}px "Courier New", monospace`;
+              for (let i = 0; i < 12; i++) {
+                const progress = clamp(shootPhase / 0.9 - i * 0.035, 0, 1);
+                ctx.fillStyle = colorAt(scleraPalette, 0.72, 1 - i / 14);
+                ctx.fillText(i === 0 ? "@" : "/", startX + progress * scale * 1.35 - i * 7, startY + progress * scale * 0.48 - i * 3);
+              }
+            }
+          }
+
+          if (!reducedMotion && t > 34.9 && t < 104.9) {
+            const cometAge = t - 34.9;
+            const cometX = pupilScreenX + (-0.95 + 0.03 * cometAge) * state.height;
+            const cometY = pupilScreenY + (-0.28 + 0.008 * cometAge) * state.height;
+            ctx.font = `600 ${state.fontSize}px "Courier New", monospace`;
+            for (let i = 0; i < 18; i++) {
+              const tail = i / 18;
+              const sx = cometX - 0.22 * tail * state.height;
+              const sy = cometY - 0.055 * tail * state.height;
+              if (sx < 0 || sx > state.width || sy < 0 || sy > state.height) continue;
+              ctx.fillStyle = colorAt(scleraPalette, 0.82, (1 - tail) ** 1.4);
+              ctx.fillText(i === 0 ? "@" : "/", sx, sy);
+            }
+          }
+
+          if (flowerAmount > 0.002) {
+            const flowerSize = Math.max(state.cellW * 2, flowerScale * state.height * 1.15)
+              * (1 + 0.025 * Math.sin(t * 2.6) * flowerOpen ** 2);
+            const flowerRadius = flowerSize * (0.24 + 0.7 * flowerOpen);
+            const cellStartX = Math.max(0, Math.floor((pupilScreenX - flowerRadius - state.cellW) / state.cellW) * state.cellW);
+            const cellEndX = Math.min(state.width, pupilScreenX + flowerRadius + state.cellW);
+            const cellStartY = Math.max(0, Math.floor((pupilScreenY - flowerRadius - state.cellH) / state.cellH) * state.cellH);
+            const cellEndY = Math.min(state.height, pupilScreenY + flowerRadius + state.cellH);
+            ctx.font = `600 ${state.fontSize}px "Courier New", monospace`;
+
+            for (let sy = cellStartY; sy <= cellEndY; sy += state.cellH) {
+              for (let sx = cellStartX; sx <= cellEndX; sx += state.cellW) {
+                const dx = (sx - pupilScreenX) / flowerSize;
+                const dy = (pupilScreenY - sy) / flowerSize;
+                const radius = Math.hypot(dx, dy);
+                const angle = Math.atan2(dy, dx);
+                const petalWave = 0.68 + 0.32 * Math.cos(angle * 6);
+                const petalEdge = (0.24 + 0.7 * flowerOpen) * petalWave;
+                const centerRadius = 0.12 + flowerOpen * 0.035;
+                const innerPetalEdge = (0.22 + 0.48 * flowerOpen)
+                  * (0.72 + 0.28 * Math.cos(angle * 6 + Math.PI / 6));
+                const innerPetal = flowerOpen > 0.3
+                  && radius > centerRadius * 1.08 && radius < innerPetalEdge;
+                const petalRidge = Math.sin(angle * 6 + radius * 10 + t * 0.12);
+                const petalVein = Math.sin(angle * 18 + radius * 13 + Math.sin(angle * 6) * 1.4);
+
+                if (radius > petalEdge || radius > 0.98) continue;
+
+                let glyph;
+                let color;
+                if (radius < centerRadius) {
+                  const pollenGrain = Math.sin(angle * 29 + radius * 83) * 0.09
+                    + Math.sin(angle * 47 - radius * 51) * 0.05;
+                  const pollenDot = Math.sin(angle * 17 + radius * 68) > 0.58;
+                  const pollenShade = clamp(0.54 + (1 - radius / centerRadius) * 0.36
+                    + pollenGrain + Math.sin(angle * 13 + t) * 0.04, 0.1, 0.98);
+                  glyph = radius < centerRadius * 0.28 ? "+" : pollenDot ? "*" : shadeGlyph(pollenShade);
+                  color = colorAt(flowerCenterPalette, pollenShade);
+                } else {
+                  const layer = innerPetal ? 1 : 0;
+                  const layerEdge = innerPetal ? innerPetalEdge : petalEdge;
+                  const veinLight = Math.max(0, petalVein) * 0.065;
+                  const petalShine = Math.pow(Math.max(0, petalRidge), 5) * 0.12;
+                  const petalShade = clamp(
+                    0.34 + flowerOpen * 0.2 + (1 - radius / Math.max(0.01, layerEdge)) * 0.25
+                    + petalRidge * 0.1 + veinLight + petalShine + layer * 0.12,
+                    0.08,
+                    0.95
+                  );
+                  glyph = radius > layerEdge - 0.035 ? (dy > 0 ? "/" : "\\")
+                    : Math.abs(petalVein) > 0.93 ? (petalVein > 0 ? "|" : "~")
+                      : petalShine > 0.07 ? "'"
+                        : shadeGlyph(petalShade);
+                  color = colorAt(flowerPalette, petalShade, flowerAmount);
+                }
+
+                ctx.fillStyle = color;
+                ctx.fillText(glyph, sx, sy);
+              }
+            }
+          }
+
+          ctx.restore();
+        }
+
         if (!reducedMotion) requestAnimationFrame(render);
       }
 
       window.addEventListener("resize", resize);
+      window.addEventListener("keydown", event => {
+        if (event.key.toLowerCase() === "r") {
+          state.time = 0;
+          state.lastFrame = 0;
+        }
+      });
       resize();
       if (reducedMotion) render(0);
       else requestAnimationFrame(render);
