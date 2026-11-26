@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pure Animated Character-Mosaic Solar System</title>
+  <style>
+    /* Pure black full-viewport canvas with zero UI chrome */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      background-color: #000000;
+      color: #cbd5e1;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mosaic-stage {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background-color: #000000;
+    }
+
+    .mosaic-canvas {
+      margin: 0;
+      padding: 12px;
+      background-color: #000000;
+      font-family: "Courier New", Courier, "Lucida Sans Typewriter", "Liberation Mono", monospace;
+      font-size: clamp(5.5px, min(0.72vw, 1.38vh), 12px);
+      line-height: 1.0;
+      letter-spacing: 0.04em;
+      white-space: pre;
+      font-variant-ligatures: none;
+      text-rendering: geometricPrecision;
+      user-select: none;
+    }
+
+    /* Starfield & orbital path colors */
+    .c-void { color: #161922; }
+    .c-star-dim { color: #475569; }
+    .c-star-mid { color: #94a3b8; }
+    .c-star-bright { color: #f8fafc; font-weight: 700; }
+    .c-orbit-dim { color: #1e293b; }
+    .c-orbit-warm { color: #452713; }
+    .c-orbit-cool { color: #172554; }
+
+    /* Sun palette */
+    .c-sun-core { color: #fffbeb; font-weight: 700; }
+    .c-sun-gold { color: #fde047; font-weight: 700; }
+    .c-sun-amber { color: #f59e0b; }
+    .c-sun-rust { color: #ea580c; }
+    .c-sun-deep { color: #c2410c; }
+    .c-sun-flare { color: #7c2d12; }
+
+    /* Mercury palette */
+    .c-merc-hi { color: #e2e8f0; font-weight: 700; }
+    .c-merc-mid { color: #94a3b8; }
+    .c-merc-low { color: #475569; }
+    .c-merc-warm { color: #a88668; }
+
+    /* Venus palette */
+    .c-ven-hi { color: #fef9c3; font-weight: 700; }
+    .c-ven-gold { color: #eab308; }
+    .c-ven-ochre { color: #ca8a04; }
+    .c-ven-rust { color: #b45309; }
+
+    /* Earth palette */
+    .c-ear-ice { color: #f8fafc; font-weight: 700; }
+    .c-ear-sky { color: #7dd3fc; }
+    .c-ear-sea { color: #2563eb; }
+    .c-ear-land { color: #22c55e; }
+    .c-ear-deep { color: #1e3a8a; }
+
+    /* Mars palette */
+    .c-mar-hi { color: #fed7aa; font-weight: 700; }
+    .c-mar-mid { color: #f97316; }
+    .c-mar-rust { color: #c2410c; }
+    .c-mar-dark { color: #b91c1c; }
+
+    /* Jupiter palette */
+    .c-jup-cream { color: #fef3c7; font-weight: 700; }
+    .c-jup-gold { color: #fbbf24; }
+    .c-jup-orange { color: #fb923c; }
+    .c-jup-rust { color: #c2410c; }
+    .c-jup-brown { color: #78350f; }
+    .c-jup-spot { color: #f87171; font-weight: 700; }
+
+    /* Saturn palette */
+    .c-sat-hi { color: #fef08a; font-weight: 700; }
+    .c-sat-gold { color: #eab308; }
+    .c-sat-ochre { color: #a16207; }
+    .c-sat-ring-hi { color: #fde68a; }
+    .c-sat-ring-mid { color: #d97706; }
+    .c-sat-ring-low { color: #78350f; }
+
+    /* Uranus palette */
+    .c-ura-hi { color: #cffafe; font-weight: 700; }
+    .c-ura-teal { color: #2dd4bf; }
+    .c-ura-deep { color: #0e7490; }
+    .c-ura-ring { color: #5eead4; }
+
+    /* Neptune palette */
+    .c-nep-hi { color: #bae6fd; font-weight: 700; }
+    .c-nep-sky { color: #60a5fa; }
+    .c-nep-blue { color: #3b82f6; }
+    .c-nep-deep { color: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <main class="mosaic-stage">
+    <pre id="solarMosaic" class="mosaic-canvas" role="img" aria-label="Animated character-mosaic solar system"></pre>
+  </main>
+
+  <script>
+    /**
+     * Pure Animated Dense Character-Mosaic Solar System
+     * -----------------------------------------------------------------------
+     * Renders a continuous real-time animation of the Sun, eight orbiting
+     * planets, planetary rings, orbital ellipses, and twinkling stars in a
+     * dense character-mosaic grid with zero UI controls.
+     */
+    (function () {
+      const COLS = 216;
+      const ROWS = 74;
+      const X_ASPECT = 1.92;
+      const DENSE_RAMP = ["Q", "O", "@", "#", "8", "$", "%", "&", "*", "=", "+", "x", "o", ":", ";", "~", "-", ".", ","];
+
+      const SUN = {
+        cx: 32,
+        cy: 37,
+        rx: 17.5,
+        ry: 17.5
+      };
+
+      const ORBITS = [
+        { id: "mercury", r: 4.1, rxOrb: 25.0, ryOrb: 11.5, angle: 0.45, speed: 1.55 },
+        { id: "venus", r: 5.7, rxOrb: 35.5, ryOrb: 15.5, angle: 2.35, speed: 1.12 },
+        { id: "earth", r: 6.1, rxOrb: 47.0, ryOrb: 19.5, angle: 0.88, speed: 0.84 },
+        { id: "mars", r: 4.8, rxOrb: 58.0, ryOrb: 23.0, angle: 4.15, speed: 0.65 },
+        { id: "jupiter", r: 10.6, rxOrb: 72.5, ryOrb: 27.5, angle: 1.42, speed: 0.38 },
+        { id: "saturn", r: 8.7, rxOrb: 87.5, ryOrb: 31.0, angle: 5.35, speed: 0.26 },
+        { id: "uranus", r: 6.4, rxOrb: 98.5, ryOrb: 33.5, angle: 2.88, speed: 0.18 },
+        { id: "neptune", r: 6.2, rxOrb: 107.5, ryOrb: 35.0, angle: 0.18, speed: 0.13 }
+      ];
+
+      function clamp(val, min, max) {
+        return Math.max(min, Math.min(max, val));
+      }
+
+      function hash2(x, y, seed = 1337) {
+        let h = Math.imul(x + 374761393, 668265263) ^ Math.imul(y + 1274126177, 2147483647) ^ Math.imul(seed, 1597334677);
+        h = Math.imul(h ^ (h >>> 13), 1274126177);
+        return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+      }
+
+      function noise2D(x, y, scale = 1, seed = 101) {
+        const sx = x / scale;
+        const sy = y / scale;
+        const x0 = Math.floor(sx);
+        const y0 = Math.floor(sy);
+        const fx = sx - x0;
+        const fy = sy - y0;
+        const u = fx * fx * (3 - 2 * fx);
+        const v = fy * fy * (3 - 2 * fy);
+
+        const n00 = hash2(x0, y0, seed);
+        const n10 = hash2(x0 + 1, y0, seed);
+        const n01 = hash2(x0, y0 + 1, seed);
+        const n11 = hash2(x0 + 1, y0 + 1, seed);
+
+        const nx0 = n00 + (n10 - n00) * u;
+        const nx1 = n01 + (n11 - n01) * u;
+        return nx0 + (nx1 - nx0) * v;
+      }
+
+      function fbm(x, y, baseScale = 6, octaves = 3, seed = 42) {
+        let sum = 0;
+        let amp = 0.5;
+        let freq = 1;
+        let norm = 0;
+        for (let i = 0; i < octaves; i++) {
+          sum += amp * noise2D(x * freq, y * freq, baseScale, seed + i * 79);
+          norm += amp;
+          amp *= 0.5;
+          freq *= 2.05;
+        }
+        return sum / norm;
+      }
+
+      function pickRamp(ramp, t) {
+        const idx = clamp(Math.floor(clamp(t, 0, 0.9999) * ramp.length), 0, ramp.length - 1);
+        return ramp[idx];
+      }
+
+      // Precompute starfield and elliptical orbital lines
+      const baseStars = [];
+      const baseOrbits = [];
+      const orbitColors = [
+        "c-orbit-dim",
+        "c-orbit-warm",
+        "c-orbit-cool",
+        "c-orbit-warm",
+        "c-orbit-dim",
+        "c-orbit-warm",
+        "c-orbit-cool",
+        "c-orbit-cool"
+      ];
+
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          const r = hash2(x, y, 9001);
+          if (r > 0.9925) {
+            const bright = hash2(x, y, 9002) > 0.55;
+            baseStars.push({
+              x,
+              y,
+              ch: bright ? "*" : "+",
+              altCh: bright ? "O" : "*",
+              cls: bright ? "c-star-bright" : "c-star-mid",
+              phase: hash2(x, y, 9009) * Math.PI * 2
+            });
+          } else if (r > 0.983) {
+            baseStars.push({
+              x,
+              y,
+              ch: hash2(x, y, 9003) > 0.5 ? "." : ":",
+              altCh: "+",
+              cls: "c-star-dim",
+              phase: hash2(x, y, 9010) * Math.PI * 2
+            });
+          } else if (r > 0.974) {
+            baseStars.push({
+              x,
+              y,
+              ch: ".",
+              altCh: ",",
+              cls: "c-void",
+              phase: hash2(x, y, 9011) * Math.PI * 2
+            });
+          }
+
+          for (let i = 0; i < ORBITS.length; i++) {
+            const o = ORBITS[i];
+            const nx = (x - SUN.cx) / (o.rxOrb * X_ASPECT);
+            const ny = (y - SUN.cy) / o.ryOrb;
+            const radNorm = Math.sqrt(nx * nx + ny * ny);
+            const approxDist = Math.abs(radNorm - 1.0) * ((o.rxOrb + o.ryOrb) * 0.5);
+            if (approxDist < 0.36) {
+              const theta = Math.atan2(ny, nx);
+              const dash = Math.sin(theta * 34 + i * 1.3);
+              if (dash > -0.32) {
+                baseOrbits.push({
+                  x,
+                  y,
+                  ch: Math.abs(ny) > 0.72 ? "." : "-",
+                  cls: orbitColors[i]
+                });
+              }
+            }
+          }
+        }
+      }
+
+      function shadeSphere(x, y, cx, cy, r, lightX, lightY) {
+        const nx = (x - cx) / (r * X_ASPECT);
+        const ny = (y - cy) / r;
+        const distSq = nx * nx + ny * ny;
+        if (distSq > 1.0) return null;
+
+        const nz = Math.sqrt(Math.max(0, 1 - distSq));
+        const lz = Math.sqrt(Math.max(0.15, 1 - lightX * lightX - lightY * lightY));
+        const diffuse = clamp(nx * lightX + ny * lightY + nz * lz, 0, 1);
+        const rim = Math.pow(clamp(1 - nz, 0, 1), 2.6) * 0.22;
+
+        return {
+          nx,
+          ny,
+          nz,
+          light: clamp(diffuse * 0.88 + rim + 0.08, 0, 1)
+        };
+      }
+
+      function computeFrameGrid(simTime) {
+        const grid = Array.from({ length: ROWS }, () =>
+          Array.from({ length: COLS }, () => ({ ch: " ", cls: "" }))
+        );
+
+        function setCell(x, y, ch, cls) {
+          if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return;
+          grid[y][x] = { ch, cls };
+        }
+
+        // Twinkling stars
+        for (let i = 0; i < baseStars.length; i++) {
+          const st = baseStars[i];
+          const tw = Math.sin(simTime * 2.4 + st.phase);
+          if (tw > 0.78) {
+            setCell(st.x, st.y, st.altCh, "c-star-bright");
+          } else if (tw < -0.85 && st.cls !== "c-void") {
+            setCell(st.x, st.y, ".", "c-void");
+          } else {
+            setCell(st.x, st.y, st.ch, st.cls);
+          }
+        }
+
+        // Orbital tracks
+        for (let i = 0; i < baseOrbits.length; i++) {
+          const ob = baseOrbits[i];
+          setCell(ob.x, ob.y, ob.ch, ob.cls);
+        }
+
+        // Shimmering Sun & corona
+        const sunPulse = 1 + 0.03 * Math.sin(simTime * 2.1);
+        const minSx = Math.max(0, Math.floor(SUN.cx - SUN.rx * X_ASPECT * 1.35));
+        const maxSx = Math.min(COLS - 1, Math.ceil(SUN.cx + SUN.rx * X_ASPECT * 1.35));
+        const minSy = Math.max(0, Math.floor(SUN.cy - SUN.ry * 1.35));
+        const maxSy = Math.min(ROWS - 1, Math.ceil(SUN.cy + SUN.ry * 1.35));
+
+        for (let y = minSy; y <= maxSy; y++) {
+          for (let x = minSx; x <= maxSx; x++) {
+            const nx = (x - SUN.cx) / (SUN.rx * sunPulse * X_ASPECT);
+            const ny = (y - SUN.cy) / (SUN.ry * sunPulse);
+            const radial = Math.sqrt(nx * nx + ny * ny);
+            const angle = Math.atan2(ny, nx);
+
+            const flareWave =
+              0.08 * Math.sin(angle * 7 + simTime * 1.45) +
+              0.05 * Math.cos(angle * 13 - simTime * 1.9) +
+              0.06 * fbm(x * 1.35 + simTime * 2.2, y * 1.35 - simTime * 1.5, 5, 3, 303);
+
+            const gran = fbm(x + simTime * 1.8, y - simTime * 1.2, 3.2, 3, 505);
+            const limbLight = clamp(1.15 - radial * 0.85 + (gran - 0.5) * 0.34, 0, 1.25);
+
+            if (radial <= 1.0 + flareWave * 0.48) {
+              const lightFactor = clamp(limbLight * 0.82 + (-nx * 0.14 - ny * 0.14 + 0.18), 0, 1);
+
+              if (radial < 0.46 && lightFactor > 0.62) {
+                const ch = pickRamp(["Q", "O", "@", "#"], 1 - lightFactor * 0.6);
+                setCell(x, y, ch, lightFactor > 0.84 ? "c-sun-core" : "c-sun-gold");
+              } else if (radial < 0.76 && lightFactor > 0.38) {
+                const ch = pickRamp(["O", "@", "#", "8", "$", "%"], 1 - lightFactor * 0.75);
+                setCell(x, y, ch, lightFactor > 0.65 ? "c-sun-gold" : "c-sun-amber");
+              } else if (radial <= 1.0) {
+                const ch = pickRamp(["#", "8", "$", "%", "&", "*", "+", ":", "."], 1 - lightFactor * 0.85);
+                let cls = "c-sun-rust";
+                if (lightFactor > 0.55) cls = "c-sun-amber";
+                else if (lightFactor < 0.28) cls = "c-sun-deep";
+                setCell(x, y, ch, cls);
+              } else {
+                const coronaStrength = 1 - (radial - 1.0) / Math.max(0.04, flareWave * 0.48 + 0.08);
+                if (coronaStrength > 0.16 && hash2(x + Math.floor(simTime * 4), y, 777) > 0.25) {
+                  const ch = pickRamp(["*", "+", "x", ":", "~", "-", "."], 1 - coronaStrength);
+                  setCell(x, y, ch, coronaStrength > 0.5 ? "c-sun-rust" : "c-sun-flare");
+                }
+              }
+            }
+          }
+        }
+
+        // Orbiting planets sorted back-to-front along vertical screen axis
+        const activePlanets = ORBITS.map((o) => {
+          const theta = o.angle + simTime * o.speed;
+          const cx = SUN.cx + Math.cos(theta) * o.rxOrb * X_ASPECT;
+          const cy = SUN.cy + Math.sin(theta) * o.ryOrb;
+          const depthScale = 1 + Math.sin(theta) * 0.08;
+          return {
+            id: o.id,
+            cx,
+            cy,
+            r: Math.max(2.6, o.r * depthScale),
+            spin: simTime * (0.9 + o.speed * 1.4)
+          };
+        }).sort((a, b) => a.cy - b.cy);
+
+        for (const p of activePlanets) {
+          const minX = Math.floor(p.cx - p.r * X_ASPECT * 2.4);
+          const maxX = Math.ceil(p.cx + p.r * X_ASPECT * 2.4);
+          const minY = Math.floor(p.cy - p.r * 2.1);
+          const maxY = Math.ceil(p.cy + p.r * 2.1);
+
+          if (p.id === "saturn") {
+            const tilt = -0.34 + Math.sin(simTime * 0.5) * 0.04;
+            const cosT = Math.cos(tilt);
+            const sinT = Math.sin(tilt);
+
+            for (let y = minY; y <= maxY; y++) {
+              for (let x = minX; x <= maxX; x++) {
+                const dx = (x - p.cx) / X_ASPECT;
+                const dy = y - p.cy;
+                const u = dx * cosT + dy * sinT;
+                const v = (-dx * sinT + dy * cosT) * 3.1;
+                const ringR = Math.sqrt(u * u + v * v);
+
+                const inInnerRing = ringR >= p.r * 1.24 && ringR <= p.r * 1.62;
+                const inCassiniGap = ringR > p.r * 1.62 && ringR < p.r * 1.73;
+                const inOuterRing = ringR >= p.r * 1.73 && ringR <= p.r * 2.18;
+
+                if ((inInnerRing || inOuterRing) && !inCassiniGap) {
+                  const isFront = v > 0;
+                  const onPlanetDisk = (dx / p.r) ** 2 + (dy / p.r) ** 2 <= 1.0;
+                  if (!isFront && onPlanetDisk) continue;
+
+                  const ringNoise = noise2D(x * 1.8 + p.spin, y * 1.8, 2.5, 612);
+                  const bandWave = Math.sin(ringR * 7.5 + p.spin);
+                  let ch = "=";
+                  let cls = "c-sat-ring-mid";
+
+                  if (inInnerRing && ringNoise > 0.35) {
+                    ch = bandWave > 0 ? "#" : "%";
+                    cls = "c-sat-ring-hi";
+                  } else if (inOuterRing) {
+                    ch = ringNoise > 0.52 ? "-" : ringNoise > 0.25 ? ":" : ".";
+                    cls = ringNoise > 0.45 ? "c-sat-ring-mid" : "c-sat-ring-low";
+                  } else {
+                    ch = bandWave > 0 ? "=" : "~";
+                    cls = "c-sat-ring-mid";
+                  }
+
+                  setCell(x, y, ch, cls);
+                }
+              }
+            }
+          }
+
+          if (p.id === "uranus") {
+            const tilt = 1.15;
+            const cosT = Math.cos(tilt);
+            const sinT = Math.sin(tilt);
+
+            for (let y = minY; y <= maxY; y++) {
+              for (let x = minX; x <= maxX; x++) {
+                const dx = (x - p.cx) / X_ASPECT;
+                const dy = y - p.cy;
+                const onDisk = (dx / p.r) ** 2 + (dy / p.r) ** 2 <= 1.0;
+                if (onDisk) continue;
+
+                const u = dx * cosT + dy * sinT;
+                const v = (-dx * sinT + dy * cosT) * 3.4;
+                const rRing = Math.sqrt(u * u + v * v);
+                if (rRing >= p.r * 1.38 && rRing <= p.r * 1.66 && hash2(x, y, 808) > 0.38) {
+                  setCell(x, y, hash2(x, y, 809) > 0.5 ? ":" : ".", "c-ura-ring");
+                }
+              }
+            }
+          }
+
+          for (let y = minY; y <= maxY; y++) {
+            for (let x = minX; x <= maxX; x++) {
+              const s = shadeSphere(x, y, p.cx, p.cy, p.r, -0.55, -0.45);
+              if (!s) continue;
+
+              const driftX = x + p.spin * 1.6;
+              const nDetail = fbm(driftX, y, 2.2, 3, p.id.charCodeAt(0) * 97);
+              let ch = "@";
+              let cls = "c-merc-mid";
+
+              if (p.id === "mercury") {
+                const crater = noise2D(driftX * 1.5, y * 1.5, 1.9, 111);
+                const val = clamp(s.light * 0.8 + (nDetail - 0.5) * 0.35, 0, 1);
+                ch = pickRamp(DENSE_RAMP, 1 - val);
+                if (val > 0.72) cls = "c-merc-hi";
+                else if (crater < 0.32 && val < 0.5) cls = "c-merc-warm";
+                else if (val > 0.36) cls = "c-merc-mid";
+                else cls = "c-merc-low";
+              } else if (p.id === "venus") {
+                const swirl = Math.sin(s.ny * 6 + nDetail * 4.2 + p.spin * 0.5);
+                const val = clamp(s.light * 0.78 + swirl * 0.14 + (nDetail - 0.5) * 0.2, 0, 1);
+                ch = pickRamp(DENSE_RAMP, 1 - val);
+                if (val > 0.75) cls = "c-ven-hi";
+                else if (val > 0.52) cls = "c-ven-gold";
+                else if (val > 0.3) cls = "c-ven-ochre";
+                else cls = "c-ven-rust";
+              } else if (p.id === "earth") {
+                const continent = fbm(driftX * 1.1, y * 1.1, 2.8, 4, 404);
+                const clouds = fbm(driftX * 1.4 + 9, y * 1.3 - 4, 2.1, 3, 409);
+                const isIceCap = Math.abs(s.ny) > 0.78 && s.light > 0.35;
+                const isCloud = clouds > 0.64 && s.light > 0.32;
+                const isLand = continent > 0.52 && !isCloud && !isIceCap;
+
+                const val = clamp(s.light * 0.82 + (continent - 0.5) * 0.25, 0, 1);
+                ch = pickRamp(DENSE_RAMP, 1 - val);
+
+                if (isIceCap || (isCloud && val > 0.68)) {
+                  cls = "c-ear-ice";
+                  ch = isCloud ? "#" : "@";
+                } else if (isCloud) {
+                  cls = "c-ear-sky";
+                  ch = "%";
+                } else if (isLand) {
+                  cls = val > 0.42 ? "c-ear-land" : "c-ear-deep";
+                } else {
+                  cls = val > 0.58 ? "c-ear-sky" : val > 0.32 ? "c-ear-sea" : "c-ear-deep";
+                }
+              } else if (p.id === "mars") {
+                const polarCap = s.ny < -0.76 && s.light > 0.45;
+                const val = clamp(s.light * 0.8 + (nDetail - 0.5) * 0.3, 0, 1);
+                ch = pickRamp(DENSE_RAMP, 1 - val);
+                if (polarCap) {
+                  cls = "c-mar-hi";
+                  ch = "#";
+                } else if (val > 0.72) {
+                  cls = "c-mar-hi";
+                } else if (val > 0.48) {
+                  cls = "c-mar-mid";
+                } else if (val > 0.26) {
+                  cls = "c-mar-rust";
+                } else {
+                  cls = "c-mar-dark";
+                }
+              } else if (p.id === "jupiter") {
+                const bandCoord = s.ny * 7.5 + (nDetail - 0.5) * 1.35;
+                const band = Math.sin(bandCoord * Math.PI);
+                const spotX = 0.18 + Math.sin(p.spin * 0.7) * 0.16;
+                const spotDx = (s.nx - spotX) / 0.26;
+                const spotDy = (s.ny - 0.22) / 0.17;
+                const inSpot = spotDx * spotDx + spotDy * spotDy <= 1.0;
+
+                const val = clamp(s.light * 0.75 + band * 0.18 + (nDetail - 0.5) * 0.16, 0, 1);
+                ch = pickRamp(DENSE_RAMP, 1 - val);
+
+                if (inSpot && s.light > 0.25) {
+                  ch = "@";
+                  cls = "c-jup-spot";
+                } else if (band > 0.45 && val > 0.55) {
+                  cls = "c-jup-cream";
+                } else if (band > 0.05 && val > 0.4) {
+                  cls = "c-jup-gold";
+                } else if (val > 0.35) {
+                  cls = "c-jup-orange";
+                } else if (val > 0.18) {
+                  cls = "c-jup-rust";
+                } else {
+                  cls = "c-jup-brown";
+                }
+              } else if (p.id === "saturn") {
+                const band = Math.sin(s.ny * 6.5 + (nDetail - 0.5) * 0.8);
+                const val = clamp(s.light * 0.8 + band * 0.12 + (nDetail - 0.5) * 0.14, 0, 1);
+                ch = pickRamp(DENSE_RAMP, 1 - val);
+                if (val > 0.72) cls = "c-sat-hi";
+                else if (val > 0.42) cls = "c-sat-gold";
+                else cls = "c-sat-ochre";
+              } else if (p.id === "uranus") {
+                const haze = Math.cos(s.ny * 4.5 + nDetail * 1.5);
+                const val = clamp(s.light * 0.78 + haze * 0.12 + (nDetail - 0.5) * 0.15, 0, 1);
+                ch = pickRamp(DENSE_RAMP, 1 - val);
+                if (val > 0.68) cls = "c-ura-hi";
+                else if (val > 0.36) cls = "c-ura-teal";
+                else cls = "c-ura-deep";
+              } else if (p.id === "neptune") {
+                const stormBand = Math.sin(s.ny * 6 + nDetail * 2.4 + p.spin * 0.4);
+                const val = clamp(s.light * 0.8 + stormBand * 0.14 + (nDetail - 0.5) * 0.16, 0, 1);
+                ch = pickRamp(DENSE_RAMP, 1 - val);
+                if (val > 0.72) cls = "c-nep-hi";
+                else if (val > 0.5) cls = "c-nep-sky";
+                else if (val > 0.28) cls = "c-nep-blue";
+                else cls = "c-nep-deep";
+              }
+
+              setCell(x, y, ch, cls);
+            }
+          }
+        }
+
+        return grid;
+      }
+
+      const mosaicEl = document.getElementById("solarMosaic");
+
+      function escapeHtml(str) {
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function renderGridToDom(grid) {
+        const linesHtml = [];
+        for (let y = 0; y < ROWS; y++) {
+          let rowStr = "";
+          let x = 0;
+          while (x < COLS) {
+            const cell = grid[y][x];
+            let run = cell.ch;
+            let nx = x + 1;
+            while (nx < COLS && grid[y][nx].cls === cell.cls) {
+              run += grid[y][nx].ch;
+              nx++;
+            }
+            if (!cell.cls) {
+              rowStr += escapeHtml(run);
+            } else {
+              rowStr += `<span class="${cell.cls}">${escapeHtml(run)}</span>`;
+            }
+            x = nx;
+          }
+          linesHtml.push(rowStr);
+        }
+        mosaicEl.innerHTML = linesHtml.join("\n");
+      }
+
+      let simTime = 0;
+      let lastFrameTime = performance.now();
+
+      function tick(now) {
+        try {
+          const dt = Math.min(0.05, Math.max(0, (now - lastFrameTime) * 0.001));
+          lastFrameTime = now;
+          simTime += dt;
+          renderGridToDom(computeFrameGrid(simTime));
+        } catch (err) {
+          mosaicEl.textContent = err && err.message ? err.message : String(err);
+        }
+        requestAnimationFrame(tick);
+      }
+
+      try {
+        renderGridToDom(computeFrameGrid(0));
+      } catch (err) {
+        mosaicEl.textContent = err && err.message ? err.message : String(err);
+      }
+
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>

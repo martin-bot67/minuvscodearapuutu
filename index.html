@@ -1,558 +1,121 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#000000" />
-  <title>Eye to Space</title>
-  <style>
-    :root {
-      color-scheme: dark;
-      background: #000;
-    }
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Doctor Doom — Animated ASCII</title>
+<style>
+html,body{margin:0;height:100%;background:#000}
+body{display:flex;align-items:center;justify-content:center;overflow:hidden;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);box-sizing:border-box}
+canvas{display:block;max-width:100%}
+</style></head><body>
+<canvas id="c" role="img" aria-label="Animated ASCII portrait of Doctor Doom"></canvas>
+<script>
+const W=104,H=58,RAMP=" .`',:;-~=+*xvX#%&WN@$",N=RAMP.length-1,FY=-6;
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const TS=matchMedia('(prefers-reduced-motion: reduce)').matches?.25:1;
+let CW,CH,mx=0,my=0,ptr=false,LX=0,LY=0,LZ=.75,T=0,FL=0;
+addEventListener('pointermove',e=>{ptr=true;mx=e.clientX/innerWidth*2-1;my=e.clientY/innerHeight*2-1});
+function fit(){const d=devicePixelRatio||1,fs=Math.min(innerWidth/(W*.6),innerHeight/H);CW=fs*.6;CH=fs;
+ cv.width=W*CW*d;cv.height=H*CH*d;cv.style.width=W*CW+'px';cv.style.height=H*CH+'px';
+ ctx.setTransform(d,0,0,d,0,0);ctx.font='bold '+fs*.95+'px Menlo,Consolas,"DejaVu Sans Mono",monospace';ctx.textBaseline='top'}
+addEventListener('resize',fit);fit();
 
-    * { box-sizing: border-box; }
+const hs=(a,b,c)=>{const n=Math.sin(a*127.1+b*311.7+c*74.7)*43758.5453;return n-Math.floor(n)};
+const cl=(v,a=0,b=1)=>v<a?a:v>b?b:v;
+const q=v=>v>255?255:v<0?0:v|0;
+const pick=(l,j)=>RAMP[cl(Math.round(l*N+j),1,N)];
+let oc,oR,oG,oB;
+const out=(c,R,G,B)=>{oc=c;oR=R;oG=G;oB=B;return 1};
+const sw=(x,y)=>{const s=Math.abs(x*.7+y*.4-((T*7)%110-40));return s<1.6?.45*(1-s/1.6):0};
 
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: #000;
-    }
+function face(x,y,ax,nx,ny,d,c,r){
+ let l=cl(nx*LX+ny*LY+Math.sqrt(1-d)*LZ,.05,1);l=.14+.76*l;
+ let ch='';
+ const dy=y-(FY-3.5+ax*.32);
+ if(ax<9.5&&dy>-1.2&&dy<1.1) l=dy<0?.97:l*.1;               // brow ridge
+ const ey=FY-.4-(ax-2.5)*.25,de=Math.abs(y-ey);
+ if(ax>2.2&&ax<7.2){                                         // eye slits
+  if(de<.7){const p=.6+.4*Math.sin(T*2.4);return out(de<.35?'@':'#',50*p,255*p,175*p)}
+  if(de<1.7&&dy>=1.1) l*=.2;
+ }
+ if(y>FY+1&&y<FY+6.5){ if(ax<.9)l=Math.min(1,l+.35); else if(ax<2)l*=.45 }  // nose
+ if(y>FY+6.3&&y<FY+7.1&&ax<1.8) l=.04;
+ const cx=3+(y-FY-3)*.8; if(y>FY+3&&y<FY+9&&Math.abs(ax-cx)<.45) l*=.2;       // cheek seams
+ if(Math.abs(y-(FY-8.5))<.4||(ax<.35&&y<FY-4.5)) l*=.2;                       // forehead seams
+ if(Math.abs(ax-7)<.5&&Math.abs(y-(FY-6.5))<.5){l=1;ch='o'}
+ const m0=FY+8.3;
+ if(y>m0&&y<FY+12.5&&ax<4.8-(y-m0)*.3){const bar=c&1;l=bar?.88:.14;ch=bar?'|':(Math.floor(y-m0)%2==0?'-':':')} // grille
+ if(Math.abs(ax-5.5)<.55&&Math.abs(y-(m0+.4))<.55){l=1;ch='O'}
+ l=cl(l+sw(x,y));
+ const g=22+l*233,rim=cl((d-.72)/.28);
+ return out(ch||pick(l,(hs(c,r,FL)-.5)*1.6),g*(1-.55*rim),g*(1-.05*rim),g*(1-.3*rim)+8);
+}
 
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      background: #000;
-    }
-  </style>
-</head>
-<body>
-  <canvas id="art" aria-label="A detailed animated ASCII eye that zooms into a star field and a red flower blooming inside the pupil"></canvas>
-  <script>
-    (() => {
-      "use strict";
+function collar(x,y,ax,cw,c,r){
+ let l=.4+.22*Math.sin(x*.33+1)-(y-10)*.008+.12*(-LX*x*.06-LY*.2),ch='';
+ const hy=(((y-9)%6)+6)%6<.75,vx=ax<.4||Math.abs(ax-9)<.4||Math.abs(ax-17)<.4;
+ if(hy&&vx){l=.95;ch='o'}else if(hy){l=.07;ch='='}else if(vx){l=.07;ch='|'}
+ const e=Math.hypot(x,y-20);
+ if(e<4.2){
+  if(e>3.2){l=.95;ch='O'}
+  else{const p=.5+.5*Math.sin(T*2.2);return out('*#@%'[Math.floor(hs(c,r,FL)*4)],110+120*p,40,255)}
+ } else if(y>10){
+  for(const s of[-1,1]){const cx=s*(6.5+(y-10)*.12)+Math.sin(y*.55-T*2.2)*.9;
+   if(Math.abs(x-cx)<.55) return out('&8'[(c+r)&1],40,200,140)}
+ }
+ l=cl(l+sw(x,y));
+ if(ax>cw-1.3){l=Math.max(l,.7);const g=l*235;return out(pick(l,0),g*.75,g*.7,g)}
+ const g=20+l*235;
+ return out(ch||pick(l,hs(c,r,FL)*1.4-.7),g*.95,g*.97,g*1.04);
+}
 
-      const canvas = document.getElementById("art");
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+function cloak(x,y,ax,c,r,ho,bw){
+ const f=Math.sin(x*1.3+Math.sin(y*.22+T*.6)*2.2+T*.4);
+ const e=Math.max(cl((ho-.72)/.28),y>2?cl((ax-bw+3)/3):0);
+ const l=cl(.1+.24*Math.max(0,f)+.05*hs(c,r,FL)+.3*e*(.6+.4*Math.sin(T*1.5+y*.3)));
+ return out(pick(l,hs(c,r,FL)-.5),l*200,l*125,l*320);
+}
 
-      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const frameInterval = 1000 / 40;
-      const zoomInStart = 5.4;
-      const zoomInDuration = 28;
-      const finalHoldDuration = 10;
-      const zoomOutDuration = 7;
-      const resetHoldDuration = 20;
-      const cycleDuration = zoomInStart + zoomInDuration + finalHoldDuration + zoomOutDuration + resetHoldDuration;
-      const glyphs = " -_~=/#";
-      const skinPalette = [
-        [25, 16, 23],
-        [72, 39, 43],
-        [139, 77, 67],
-        [205, 132, 101],
-        [246, 194, 146],
-        [255, 224, 185],
-      ];
-      const scleraPalette = [
-        [57, 48, 57],
-        [123, 108, 108],
-        [196, 177, 157],
-        [239, 222, 194],
-        [255, 243, 219],
-      ];
-      const irisPalette = [
-        [30, 22, 17],
-        [83, 51, 25],
-        [142, 89, 35],
-        [204, 143, 54],
-        [255, 213, 112],
-      ];
-      const pupilPalette = [
-        [3, 5, 10],
-        [8, 12, 18],
-        [18, 24, 29],
-      ];
-      const flowerPalette = [
-        [32, 3, 5],
-        [93, 5, 12],
-        [163, 12, 20],
-        [220, 32, 35],
-        [255, 91, 67],
-        [255, 173, 100],
-      ];
-      const flowerCenterPalette = [
-        [96, 35, 7],
-        [184, 93, 13],
-        [255, 188, 54],
-        [255, 232, 128],
-      ];
-      const spaceStars = Array.from({ length: 720 }, (_, i) => ({
-        x: random(i + 11) * 2 - 1,
-        y: random(i + 113) * 2 - 1,
-        depth: 0.08 + random(i + 227) * 0.92,
-        brightness: 0.12 + random(i + 331) * 0.88,
-        phase: random(i + 443) * Math.PI * 2,
-      }));
-      const state = {
-        width: 0,
-        height: 0,
-        dpr: 1,
-        fontSize: 12,
-        cellW: 7,
-        cellH: 13,
-        time: 0,
-        lastFrame: 0,
-      };
+function sample(x,y,c,r){
+ const ax=Math.abs(x);
+ const rx=10.5-Math.max(0,y-FY-2)*.45,nx=x/rx,ny=(y-FY)/14,d=nx*nx+ny*ny;
+ if(d<1&&rx>.6) return face(x,y,ax,nx,ny,d,c,r);
+ const yc=10-cl(ax-6,0,8)*.7,cw=13+Math.max(0,y-10)*.9;
+ if(y>=yc&&ax<cw) return collar(x,y,ax,cw,c,r);
+ const hi=(x/14.5)**2+((y+6)/18)**2;
+ if(hi<1){
+  if(hi>.78){const e=((hi-.78)/.22)**2,l=.12+.75*e;return out(pick(l,hs(c,r,FL)-.5),l*50,l*255,l*190)}
+  return hs(c,r,FL)<.035?out('.',70,40,120):0;
+ }
+ const ho=(x/21)**2+((y+6)/22)**2,bw=17+Math.max(0,y-2)*.5+Math.sin(y*.45+T*1.1)*1.1;
+ if(ho<1||(y>2&&ax<bw)) return cloak(x,y,ax,c,r,ho,bw);
+ return 0;
+}
 
-      function clamp(value, min, max) {
-        return Math.max(min, Math.min(max, value));
-      }
-
-      function random(seed) {
-        const n = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
-        return n - Math.floor(n);
-      }
-
-      function smoothstep(value) {
-        const t = clamp(value, 0, 1);
-        return t * t * (3 - 2 * t);
-      }
-
-      function segmentDistance(x, y, x1, y1, x2, y2) {
-        const dx = x2 - x1;
-        const dy = y2 - y1;
-        const lengthSquared = dx * dx + dy * dy;
-        const progress = lengthSquared ? clamp(((x - x1) * dx + (y - y1) * dy) / lengthSquared, 0, 1) : 0;
-        return Math.hypot(x - (x1 + progress * dx), y - (y1 + progress * dy));
-      }
-
-      function resize() {
-        state.width = window.innerWidth;
-        state.height = window.innerHeight;
-        state.dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-        canvas.width = Math.round(state.width * state.dpr);
-        canvas.height = Math.round(state.height * state.dpr);
-        ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
-
-        state.fontSize = clamp(Math.min(state.width / 126, state.height / 54), 7, 18);
-        state.cellW = state.fontSize * 0.68;
-        state.cellH = state.fontSize * 1.1;
-        ctx.font = `600 ${state.fontSize}px "Courier New", monospace`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-      }
-
-      function colorAt(colors, amount, alpha = 1) {
-        const position = clamp(amount, 0, 0.9999) * (colors.length - 1);
-        const index = Math.floor(position);
-        const fraction = position - index;
-        const a = colors[index];
-        const b = colors[index + 1] || a;
-        const r = Math.round(a[0] + (b[0] - a[0]) * fraction);
-        const g = Math.round(a[1] + (b[1] - a[1]) * fraction);
-        const blue = Math.round(a[2] + (b[2] - a[2]) * fraction);
-        return `rgba(${r},${g},${blue},${alpha})`;
-      }
-
-      function shadeGlyph(amount) {
-        return glyphs[Math.min(glyphs.length - 1, Math.floor(clamp(amount, 0, 0.9999) * glyphs.length))];
-      }
-
-      function render(timestamp) {
-        if (!reducedMotion && state.lastFrame && timestamp - state.lastFrame < frameInterval) {
-          requestAnimationFrame(render);
-          return;
-        }
-
-        if (!reducedMotion) {
-          const delta = state.lastFrame ? Math.min((timestamp - state.lastFrame) / 1000, 0.05) : 0;
-          state.time += delta;
-        } else {
-          state.time = 8;
-        }
-        state.lastFrame = timestamp;
-
-        const t = state.time % cycleDuration;
-        const blinkTime = t - 4;
-        const blinkAmount = reducedMotion || blinkTime < 0 || blinkTime > 0.36 ? 0
-          : blinkTime < 0.09 ? smoothstep(blinkTime / 0.09)
-            : blinkTime < 0.12 ? 1
-              : 1 - smoothstep((blinkTime - 0.12) / 0.24);
-        const eyeOpen = Math.max(0.015, smoothstep((t - 0.9) / 2.4) * (1 - 0.985 * blinkAmount));
-        const zoomIn = smoothstep((t - zoomInStart) / zoomInDuration);
-        const zoomOut = smoothstep((t - zoomInStart - zoomInDuration - finalHoldDuration) / zoomOutDuration);
-        const zoomProgress = zoomIn * (1 - zoomOut);
-        const idleMotion = smoothstep(t / 5.4);
-        const zoom = Math.exp(Math.log(14) * zoomProgress) * (1 + 0.05 * idleMotion + 0.004 * Math.sin(t * 0.9));
-        const irisScreenRadius = 0.2 * zoom * Math.min(state.height * 0.49, state.width * 0.44) / state.height;
-        const eyeFade = 1 - smoothstep((irisScreenRadius - 0.72) / 0.32);
-        const starAmount = smoothstep((t - 5.4) / 4.5);
-        const flowerAmount = smoothstep((t - 8.9) / 8);
-        const flowerOpen = smoothstep((t - 10) / 11);
-        const flowerScale = 0.17 * Math.min(1.15, 0.085 * zoom ** 1.25);
-        const gazeFade = 1 - zoomProgress;
-        const gazeX = 0.018 * Math.sin(t * 1.3) * gazeFade;
-        const gazeY = 0.012 * Math.sin(t * 1.1 + 1) * gazeFade - 0.03 * blinkAmount;
-        const yaw = reducedMotion ? 0.04 : Math.sin(t * 0.19) * 0.12;
-        const pitch = 0.035 + (reducedMotion ? 0 : Math.sin(t * 0.27) * 0.016);
-        const cosYaw = Math.cos(yaw);
-        const sinYaw = Math.sin(yaw);
-        const cosPitch = Math.cos(pitch);
-        const sinPitch = Math.sin(pitch);
-        const focalLength = 4;
-        const centerX = state.width * 0.5;
-        const centerY = state.height * 0.5;
-        const scale = Math.min(state.height * 0.49, state.width * 0.44);
-        const cols = Math.ceil(state.width / state.cellW);
-        const rows = Math.ceil(state.height / state.cellH);
-        const halfCols = cols / 2;
-        const halfRows = rows / 2;
-        const eyeBoundsX = eyeFade > 0.01 ? (zoom < 3.4 ? 1.18 : 0.64) * zoom * scale : 0;
-        const eyeBoundsY = eyeFade > 0.01 ? (zoom < 3.4 ? 0.72 : 0.58) * zoom * scale : 0;
-        const flowerBounds = flowerAmount > 0.002 ? flowerScale * 1.6 * state.height : 0;
-        const boundsX = Math.max(eyeBoundsX, flowerBounds, irisScreenRadius * state.height);
-        const boundsY = Math.max(eyeBoundsY, flowerBounds, irisScreenRadius * state.height);
-        const colStart = clamp(Math.floor(halfCols - boundsX / state.cellW) - 1, 0, cols);
-        const colEnd = clamp(Math.ceil(halfCols + boundsX / state.cellW) + 1, 0, cols);
-        const rowStart = clamp(Math.floor(halfRows - boundsY / state.cellH) - 1, 0, rows);
-        const rowEnd = clamp(Math.ceil(halfRows + boundsY / state.cellH) + 1, 0, rows);
-        const projected = [];
-
-        ctx.fillStyle = "#000";
-        ctx.fillRect(0, 0, state.width, state.height);
-
-        for (let row = rowStart; row < rowEnd; row++) {
-          const screenY = (row - halfRows) * state.cellH;
-          const py = screenY / scale;
-          for (let col = colStart; col < colEnd; col++) {
-            const screenX = (col - halfCols) * state.cellW;
-            const px = screenX / scale;
-            const x = px / zoom;
-            const y = py / zoom;
-            const absX = Math.abs(x);
-            let glyph = " ";
-            let color = "";
-            let depth = -0.02;
-            let surface = 0;
-
-            const halfArc = Math.sqrt(Math.max(0, 1 - (x / 1.12) ** 2));
-            const outerTop = -0.035 - 0.55 * halfArc;
-            const outerBottom = -0.035 + 0.43 * halfArc;
-            const apertureTop = -0.025 - 0.43 * halfArc * eyeOpen;
-            const apertureBottom = -0.025 + 0.34 * halfArc * eyeOpen;
-            const nearEye = zoom < 3.4;
-            const inEyeFrame = nearEye && eyeFade > 0.01 && absX < 1.12 && y > outerTop && y < outerBottom;
-            const inAperture = nearEye && eyeFade > 0.01 && absX < 1.1 && y > apertureTop && y < apertureBottom;
-            const lidMotion = smoothstep((blinkAmount - 0.08) / 0.92);
-            const upperLid = Math.abs(y - outerTop) < 0.028 || Math.abs(y - apertureTop) < 0.018;
-            const lowerLid = Math.abs(y - outerBottom) < 0.026 || Math.abs(y - apertureBottom) < 0.018;
-            const irisX = x - gazeX - 0.045;
-            const irisY = y - gazeY + 0.025;
-            const irisRadius = Math.hypot(irisX / 0.52, irisY / (0.5 * eyeOpen));
-            const irisAngle = Math.atan2(irisY, irisX);
-            const irisStriation = Math.sin(irisAngle * 22 + Math.sin(irisAngle * 7) * 1.4 + irisRadius * 5);
-            const irisFiber = Math.sin(irisAngle * 54 + Math.sin(irisAngle * 9) * 2.2 + irisRadius * 8);
-            const irisBand = Math.sin(irisRadius * 31 + Math.sin(irisAngle * 5) * 1.2);
-            const pupilRadius = Math.hypot(irisX / 0.2, irisY / (0.2 * eyeOpen));
-            const irisVisible = eyeFade > 0.01 && irisRadius < 1.12 && (nearEye ? inAperture : true);
-            const pupilVisible = irisVisible && pupilRadius < 1;
-            const scleraVein = inAperture && absX > 0.43 && absX < 0.98 && !irisVisible
-              ? Math.min(
-                Math.abs(y - (0.06 + 0.035 * Math.sin(absX * 18))),
-                Math.abs(y - (-0.08 + 0.026 * Math.sin(absX * 23 + 1.2))),
-                Math.abs(y - (0.015 + 0.02 * Math.sin(absX * 31 + 2.1)))
-              )
-              : Infinity;
-            const browLine = nearEye ? Math.min(
-              segmentDistance(x, y, -1.08, -0.28, -0.8, -0.52),
-              segmentDistance(x, y, -0.8, -0.52, -0.4, -0.66),
-              segmentDistance(x, y, -0.4, -0.66, 0, -0.7),
-              segmentDistance(x, y, 0, -0.7, 0.4, -0.66),
-              segmentDistance(x, y, 0.4, -0.66, 0.8, -0.52),
-              segmentDistance(x, y, 0.8, -0.52, 1.08, -0.28)
-            ) : Infinity;
-            const tearDuct = Math.hypot((x + 0.91) / 0.1, (y + 0.025) / 0.075);
-            const glintOne = Math.hypot((irisX + 0.16) / 0.075, (irisY + 0.2) / 0.1);
-            const glintTwo = Math.hypot((irisX - 0.17) / 0.04, (irisY - 0.16) / 0.055);
-            const lidCreaseY = apertureTop - 0.085 * halfArc;
-            const lidCrease = Math.abs(y - lidCreaseY) < 0.018 && absX < 0.86 * halfArc;
-            const lashIndex = Math.round((x + 0.56) / 0.16);
-            const lashX = -0.56 + lashIndex * 0.16;
-            const lashArc = Math.sqrt(Math.max(0, 1 - (lashX / 1.12) ** 2));
-            const lashY = -0.025 - 0.43 * lashArc * (1 - blinkAmount);
-            const lashDistance = lashIndex >= 0 && lashIndex <= 7 && absX < 0.72
-              ? segmentDistance(x, y, lashX, lashY, lashX + (lashX < 0 ? -0.035 : 0.035), lashY + 0.06 * (1 - blinkAmount * 0.35))
-              : Infinity;
-
-            if (inEyeFrame) {
-              const skinGrain = Math.sin(x * 31 + Math.sin(y * 17)) * 0.022
-                + Math.sin(y * 43 - x * 13) * 0.012;
-              const lidLight = clamp(0.28 + 0.25 * halfArc + (1 - Math.abs(y) / 0.75) * 0.18
-                + Math.sin(x * 9 + y * 13) * 0.035 + skinGrain, 0.1, 0.84);
-              glyph = shadeGlyph(lidLight);
-              color = colorAt(skinPalette, lidLight);
-              depth = 0.04 + halfArc * 0.07;
-              surface = lidLight;
-            }
-
-            if (inAperture) {
-              const scleraShade = clamp(0.38 + 0.34 * halfArc - y * 0.28
-                + Math.sin(x * 12 + y * 8) * 0.025 + Math.sin(x * 29 - y * 21) * 0.012, 0.12, 0.94);
-              glyph = shadeGlyph(scleraShade);
-              color = colorAt(scleraPalette, scleraShade);
-              depth = 0.13 + halfArc * 0.04;
-              surface = scleraShade;
-            }
-
-            if (scleraVein < 0.014) {
-              const veinShade = clamp(0.34 + (1 - scleraVein / 0.014) * 0.2, 0.15, 0.58);
-              glyph = scleraVein < 0.006 ? (y > 0 ? "/" : "\\") : "~";
-              color = colorAt(skinPalette, veinShade);
-              depth = 0.17;
-              surface = veinShade;
-            }
-
-            if (irisVisible) {
-              const irisShade = clamp(0.36 + (1 - irisRadius) * 0.34 + irisStriation * 0.1
-                + irisFiber * 0.08 + irisBand * 0.045, 0.08, 0.98);
-              const radialFiber = Math.abs(irisFiber) > 0.78;
-              glyph = irisRadius > 1.035 ? (irisAngle < 0 ? "\\" : "/")
-                : radialFiber ? (irisFiber > 0 ? "|" : "/") : shadeGlyph(irisShade);
-              color = colorAt(irisPalette, irisShade);
-              depth = 0.19 + (1 - irisRadius) * 0.08;
-              surface = irisShade;
-            }
-
-            if (pupilVisible) {
-              const pupilShade = 0.15 + Math.max(0, 1 - pupilRadius) * 0.28;
-              glyph = pupilRadius > 0.82 ? "|" : shadeGlyph(pupilShade);
-              color = colorAt(pupilPalette, pupilShade);
-              depth = 0.28 + (1 - pupilRadius) * 0.04;
-              surface = 0.2;
-            }
-
-            if (irisVisible && glintOne < 1) {
-              glyph = glintOne < 0.45 ? "=" : "\"";
-              color = colorAt(scleraPalette, 0.98);
-              depth = 0.34;
-              surface = 1;
-            }
-
-            if (irisVisible && glintTwo < 1) {
-              glyph = "~";
-              color = colorAt(scleraPalette, 0.9);
-              depth = 0.35;
-              surface = 0.94;
-            }
-
-            if ((upperLid || lowerLid) && inEyeFrame) {
-              const lidEdge = upperLid ? outerTop : outerBottom;
-              const lidShade = upperLid ? 0.78 : 0.58;
-              glyph = upperLid ? (absX > 0.8 ? "/" : "_") : "~";
-              if (Math.abs(y - lidEdge) < 0.015) glyph = upperLid ? "=" : "-";
-              color = colorAt(skinPalette, lidShade);
-              depth = 0.24;
-              surface = lidShade;
-            }
-
-            if (lidCrease && inEyeFrame) {
-              glyph = lidMotion > 0.35 ? (x < 0 ? "\\" : "/") : "~";
-              color = colorAt(skinPalette, 0.42 + lidMotion * 0.24);
-              depth = 0.18 + lidMotion * 0.04;
-              surface = 0.54 + lidMotion * 0.16;
-            }
-
-            if (lashDistance < 0.022 && inEyeFrame && eyeOpen > 0.16) {
-              glyph = lashDistance < 0.009 ? (x < lashX ? "\\" : "/") : "_";
-              color = colorAt(skinPalette, 0.12 + (1 - lashDistance / 0.022) * 0.18);
-              depth = 0.25;
-              surface = 0.25;
-            }
-
-            if (browLine < 0.035 && y < outerTop) {
-              const browShade = clamp(0.16 + (1 - browLine / 0.035) * 0.32, 0.12, 0.55);
-              glyph = browLine < 0.012 ? (x < 0 ? "\\" : "/") : shadeGlyph(browShade);
-              color = colorAt(skinPalette, browShade);
-              depth = 0.08;
-              surface = browShade;
-            }
-
-            if (tearDuct < 1 && inEyeFrame) {
-              glyph = tearDuct < 0.5 ? ">" : "=";
-              color = colorAt(scleraPalette, 0.82);
-              depth = 0.2;
-              surface = 0.82;
-            }
-
-            if (glyph === " " || eyeFade <= 0.01) continue;
-
-            const rotatedX = px * cosYaw - depth * sinYaw;
-            const rotatedZ = px * sinYaw + depth * cosYaw;
-            const tiltedY = py * cosPitch - rotatedZ * sinPitch;
-            const viewDepth = py * sinPitch + rotatedZ * cosPitch;
-            const perspective = focalLength / (focalLength - viewDepth);
-            const light = clamp(0.62 + surface * 0.42 + viewDepth * 0.32 + depth * 0.12, 0.35, 1.08);
-            projected.push({
-              glyph,
-              color: color.replace(/[\d.]+\)$/, `${eyeFade * light})`),
-              depth: viewDepth,
-              x: centerX + rotatedX * scale * perspective,
-              y: centerY + tiltedY * scale * perspective,
-              size: perspective,
-              light,
-            });
-          }
-        }
-
-        projected.sort((a, b) => a.depth - b.depth);
-        let lastFontSize = -1;
-        for (const item of projected) {
-          const fontSize = Math.max(5, Math.round(state.fontSize * item.size));
-          if (fontSize !== lastFontSize) {
-            ctx.font = `600 ${fontSize}px "Courier New", monospace`;
-            lastFontSize = fontSize;
-          }
-          ctx.fillStyle = item.color.replace(/[\d.]+\)$/, `${item.light})`);
-          ctx.fillText(item.glyph, item.x, item.y);
-        }
-
-        const pupilScreenX = centerX + (gazeX + 0.045) * zoom * scale;
-        const pupilScreenY = centerY + (gazeY - 0.025) * zoom * scale;
-        const pupilScreenRadiusX = Math.max(1, 0.2 * zoom * scale);
-        const pupilScreenRadiusY = Math.max(1, 0.2 * eyeOpen * zoom * scale);
-        if (starAmount > 0.002 || flowerAmount > 0.002) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.ellipse(pupilScreenX, pupilScreenY, pupilScreenRadiusX, pupilScreenRadiusY, 0, 0, Math.PI * 2);
-          ctx.clip();
-
-          if (starAmount > 0.002) {
-            ctx.font = `600 ${Math.max(5, Math.round(state.fontSize * 0.72))}px "Courier New", monospace`;
-            for (let i = 0; i < spaceStars.length; i++) {
-              const star = spaceStars[i];
-              const twinkle = 0.8 + 0.2 * Math.sin(t * (1 + star.brightness * 2) + star.phase);
-              const spread = (0.025 + 1.45 * starAmount) / star.depth;
-              const sx = pupilScreenX + star.x * spread * scale;
-              const sy = pupilScreenY + star.y * spread * scale;
-              if (sx < 0 || sx > state.width || sy < 0 || sy > state.height) continue;
-              ctx.fillStyle = colorAt(irisPalette, 0.28 + star.brightness * 0.54, starAmount * star.brightness * twinkle);
-              const starGlyph = star.brightness > 0.94 ? "+" : star.brightness > 0.72 ? "*" : star.brightness > 0.4 ? "x" : "/";
-              ctx.fillText(starGlyph, sx, sy);
-            }
-          }
-
-          if (!reducedMotion && t > 29.4) {
-            const shootIndex = Math.floor((t - 29.4) / 3.7);
-            const shootPhase = (t - 29.4) % 3.7;
-            if (shootPhase < 0.9) {
-              const startX = pupilScreenX + (random(shootIndex + 901) * 1.4 - 0.7) * scale;
-              const startY = pupilScreenY - scale * (0.55 + random(shootIndex + 977) * 0.3);
-              ctx.font = `600 ${state.fontSize}px "Courier New", monospace`;
-              for (let i = 0; i < 12; i++) {
-                const progress = clamp(shootPhase / 0.9 - i * 0.035, 0, 1);
-                ctx.fillStyle = colorAt(scleraPalette, 0.72, 1 - i / 14);
-                ctx.fillText(i === 0 ? "@" : "/", startX + progress * scale * 1.35 - i * 7, startY + progress * scale * 0.48 - i * 3);
-              }
-            }
-          }
-
-          if (!reducedMotion && t > 34.9 && t < 104.9) {
-            const cometAge = t - 34.9;
-            const cometX = pupilScreenX + (-0.95 + 0.03 * cometAge) * state.height;
-            const cometY = pupilScreenY + (-0.28 + 0.008 * cometAge) * state.height;
-            ctx.font = `600 ${state.fontSize}px "Courier New", monospace`;
-            for (let i = 0; i < 18; i++) {
-              const tail = i / 18;
-              const sx = cometX - 0.22 * tail * state.height;
-              const sy = cometY - 0.055 * tail * state.height;
-              if (sx < 0 || sx > state.width || sy < 0 || sy > state.height) continue;
-              ctx.fillStyle = colorAt(scleraPalette, 0.82, (1 - tail) ** 1.4);
-              ctx.fillText(i === 0 ? "@" : "/", sx, sy);
-            }
-          }
-
-          if (flowerAmount > 0.002) {
-            const flowerSize = Math.max(state.cellW * 2, flowerScale * state.height * 1.15)
-              * (1 + 0.025 * Math.sin(t * 2.6) * flowerOpen ** 2);
-            const flowerRadius = flowerSize * (0.24 + 0.7 * flowerOpen);
-            const cellStartX = Math.max(0, Math.floor((pupilScreenX - flowerRadius - state.cellW) / state.cellW) * state.cellW);
-            const cellEndX = Math.min(state.width, pupilScreenX + flowerRadius + state.cellW);
-            const cellStartY = Math.max(0, Math.floor((pupilScreenY - flowerRadius - state.cellH) / state.cellH) * state.cellH);
-            const cellEndY = Math.min(state.height, pupilScreenY + flowerRadius + state.cellH);
-            ctx.font = `600 ${state.fontSize}px "Courier New", monospace`;
-
-            for (let sy = cellStartY; sy <= cellEndY; sy += state.cellH) {
-              for (let sx = cellStartX; sx <= cellEndX; sx += state.cellW) {
-                const dx = (sx - pupilScreenX) / flowerSize;
-                const dy = (pupilScreenY - sy) / flowerSize;
-                const radius = Math.hypot(dx, dy);
-                const angle = Math.atan2(dy, dx);
-                const petalWave = 0.68 + 0.32 * Math.cos(angle * 6);
-                const petalEdge = (0.24 + 0.7 * flowerOpen) * petalWave;
-                const centerRadius = 0.12 + flowerOpen * 0.035;
-                const innerPetalEdge = (0.22 + 0.48 * flowerOpen)
-                  * (0.72 + 0.28 * Math.cos(angle * 6 + Math.PI / 6));
-                const innerPetal = flowerOpen > 0.3
-                  && radius > centerRadius * 1.08 && radius < innerPetalEdge;
-                const petalRidge = Math.sin(angle * 6 + radius * 10 + t * 0.12);
-                const petalVein = Math.sin(angle * 18 + radius * 13 + Math.sin(angle * 6) * 1.4);
-
-                if (radius > petalEdge || radius > 0.98) continue;
-
-                let glyph;
-                let color;
-                if (radius < centerRadius) {
-                  const pollenGrain = Math.sin(angle * 29 + radius * 83) * 0.09
-                    + Math.sin(angle * 47 - radius * 51) * 0.05;
-                  const pollenDot = Math.sin(angle * 17 + radius * 68) > 0.58;
-                  const pollenShade = clamp(0.54 + (1 - radius / centerRadius) * 0.36
-                    + pollenGrain + Math.sin(angle * 13 + t) * 0.04, 0.1, 0.98);
-                  glyph = radius < centerRadius * 0.28 ? "+" : pollenDot ? "*" : shadeGlyph(pollenShade);
-                  color = colorAt(flowerCenterPalette, pollenShade);
-                } else {
-                  const layer = innerPetal ? 1 : 0;
-                  const layerEdge = innerPetal ? innerPetalEdge : petalEdge;
-                  const veinLight = Math.max(0, petalVein) * 0.065;
-                  const petalShine = Math.pow(Math.max(0, petalRidge), 5) * 0.12;
-                  const petalShade = clamp(
-                    0.34 + flowerOpen * 0.2 + (1 - radius / Math.max(0.01, layerEdge)) * 0.25
-                    + petalRidge * 0.1 + veinLight + petalShine + layer * 0.12,
-                    0.08,
-                    0.95
-                  );
-                  glyph = radius > layerEdge - 0.035 ? (dy > 0 ? "/" : "\\")
-                    : Math.abs(petalVein) > 0.93 ? (petalVein > 0 ? "|" : "~")
-                      : petalShine > 0.07 ? "'"
-                        : shadeGlyph(petalShade);
-                  color = colorAt(flowerPalette, petalShade, flowerAmount);
-                }
-
-                ctx.fillStyle = color;
-                ctx.fillText(glyph, sx, sy);
-              }
-            }
-          }
-
-          ctx.restore();
-        }
-
-        if (!reducedMotion) requestAnimationFrame(render);
-      }
-
-      window.addEventListener("resize", resize);
-      window.addEventListener("keydown", event => {
-        if (event.key.toLowerCase() === "r") {
-          state.time = 0;
-          state.lastFrame = 0;
-        }
-      });
-      resize();
-      if (reducedMotion) render(0);
-      else requestAnimationFrame(render);
-    })();
-  </script>
-</body>
-</html>
+const emb=Array.from({length:44},()=>({x:Math.random()*W,y:Math.random()*H,v:1+Math.random()*3,p:Math.random()*6,k:Math.random()<.5}));
+let last=0;const t0=performance.now();
+function frame(now){
+ const dt=Math.min(.05,(now-last)/1000)*TS;last=now;
+ T=(now-t0)/1000*TS;FL=Math.floor(T*9);
+ LX=(ptr?mx:Math.sin(T*.5)*.7)*.9-.1;LY=(ptr?my:Math.cos(T*.37)*.4)*.8-.45;
+ ctx.fillStyle='#000';ctx.fillRect(0,0,W*CW,H*CH);
+ const pr=Math.min(1,T/3.2),rv=pr*(H+2),gl=T>3.4&&(T%5)>4.85;
+ for(let r=0;r<H&&r<=rv;r++){
+  const sh=gl&&r%11<3?Math.round((hs(r,2,Math.floor(T*40))-.5)*10):0,scan=pr<1&&r>rv-2,y=r-H/2+.5;
+  for(let c=0;c<W;c++){
+   if(!sample((c+sh-W/2+.5)*.6,y,c,r))continue;
+   ctx.fillStyle=scan?'#8fffd2':`rgb(${q(oR)},${q(oG)},${q(oB)})`;
+   ctx.fillText(oc,c*CW,r*CH);
+  }
+ }
+ if(pr>.8)for(const e of emb){
+  e.y-=e.v*dt*2;e.x+=Math.sin(T+e.p)*dt*2;
+  if(e.y<0){e.y=H;e.x=Math.random()*W}
+  ctx.globalAlpha=.25+.5*Math.abs(Math.sin(T*2+e.p));
+  ctx.fillStyle=e.k?'#3dffb4':'#a07bff';
+  ctx.fillText('.*+`'[Math.floor(e.p)%4],e.x*CW,e.y*CH);
+ }
+ ctx.globalAlpha=1;
+ requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script></body></html>

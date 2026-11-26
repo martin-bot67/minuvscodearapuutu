@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Doctor Doom — Animated ASCII</title>
+<style>
+html,body{margin:0;height:100%;background:#000}
+body{display:flex;align-items:center;justify-content:center;overflow:hidden;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);box-sizing:border-box}
+canvas{display:block;max-width:100%}
+</style></head><body>
+<canvas id="c" role="img" aria-label="Animated ASCII portrait of Doctor Doom"></canvas>
+<script>
+const W=104,H=58,RAMP=" .`',:;-~=+*xvX#%&WN@$",N=RAMP.length-1,FY=-6;
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const TS=matchMedia('(prefers-reduced-motion: reduce)').matches?.25:1;
+let CW,CH,mx=0,my=0,ptr=false,LX=0,LY=0,LZ=.75,T=0,FL=0;
+addEventListener('pointermove',e=>{ptr=true;mx=e.clientX/innerWidth*2-1;my=e.clientY/innerHeight*2-1});
+function fit(){const d=devicePixelRatio||1,fs=Math.min(innerWidth/(W*.6),innerHeight/H);CW=fs*.6;CH=fs;
+ cv.width=W*CW*d;cv.height=H*CH*d;cv.style.width=W*CW+'px';cv.style.height=H*CH+'px';
+ ctx.setTransform(d,0,0,d,0,0);ctx.font='bold '+fs*.95+'px Menlo,Consolas,"DejaVu Sans Mono",monospace';ctx.textBaseline='top'}
+addEventListener('resize',fit);fit();
+
+const hs=(a,b,c)=>{const n=Math.sin(a*127.1+b*311.7+c*74.7)*43758.5453;return n-Math.floor(n)};
+const cl=(v,a=0,b=1)=>v<a?a:v>b?b:v;
+const q=v=>v>255?255:v<0?0:v|0;
+const pick=(l,j)=>RAMP[cl(Math.round(l*N+j),1,N)];
+let oc,oR,oG,oB;
+const out=(c,R,G,B)=>{oc=c;oR=R;oG=G;oB=B;return 1};
+const sw=(x,y)=>{const s=Math.abs(x*.7+y*.4-((T*7)%110-40));return s<1.6?.45*(1-s/1.6):0};
+
+function face(x,y,ax,nx,ny,d,c,r){
+ let l=cl(nx*LX+ny*LY+Math.sqrt(1-d)*LZ,.05,1);l=.14+.76*l;
+ let ch='';
+ const dy=y-(FY-3.5+ax*.32);
+ if(ax<9.5&&dy>-1.2&&dy<1.1) l=dy<0?.97:l*.1;               // brow ridge
+ const ey=FY-.4-(ax-2.5)*.25,de=Math.abs(y-ey);
+ if(ax>2.2&&ax<7.2){                                         // eye slits
+  if(de<.7){const p=.6+.4*Math.sin(T*2.4);return out(de<.35?'@':'#',50*p,255*p,175*p)}
+  if(de<1.7&&dy>=1.1) l*=.2;
+ }
+ if(y>FY+1&&y<FY+6.5){ if(ax<.9)l=Math.min(1,l+.35); else if(ax<2)l*=.45 }  // nose
+ if(y>FY+6.3&&y<FY+7.1&&ax<1.8) l=.04;
+ const cx=3+(y-FY-3)*.8; if(y>FY+3&&y<FY+9&&Math.abs(ax-cx)<.45) l*=.2;       // cheek seams
+ if(Math.abs(y-(FY-8.5))<.4||(ax<.35&&y<FY-4.5)) l*=.2;                       // forehead seams
+ if(Math.abs(ax-7)<.5&&Math.abs(y-(FY-6.5))<.5){l=1;ch='o'}
+ const m0=FY+8.3;
+ if(y>m0&&y<FY+12.5&&ax<4.8-(y-m0)*.3){const bar=c&1;l=bar?.88:.14;ch=bar?'|':(Math.floor(y-m0)%2==0?'-':':')} // grille
+ if(Math.abs(ax-5.5)<.55&&Math.abs(y-(m0+.4))<.55){l=1;ch='O'}
+ l=cl(l+sw(x,y));
+ const g=22+l*233,rim=cl((d-.72)/.28);
+ return out(ch||pick(l,(hs(c,r,FL)-.5)*1.6),g*(1-.55*rim),g*(1-.05*rim),g*(1-.3*rim)+8);
+}
+
+function collar(x,y,ax,cw,c,r){
+ let l=.4+.22*Math.sin(x*.33+1)-(y-10)*.008+.12*(-LX*x*.06-LY*.2),ch='';
+ const hy=(((y-9)%6)+6)%6<.75,vx=ax<.4||Math.abs(ax-9)<.4||Math.abs(ax-17)<.4;
+ if(hy&&vx){l=.95;ch='o'}else if(hy){l=.07;ch='='}else if(vx){l=.07;ch='|'}
+ const e=Math.hypot(x,y-20);
+ if(e<4.2){
+  if(e>3.2){l=.95;ch='O'}
+  else{const p=.5+.5*Math.sin(T*2.2);return out('*#@%'[Math.floor(hs(c,r,FL)*4)],110+120*p,40,255)}
+ } else if(y>10){
+  for(const s of[-1,1]){const cx=s*(6.5+(y-10)*.12)+Math.sin(y*.55-T*2.2)*.9;
+   if(Math.abs(x-cx)<.55) return out('&8'[(c+r)&1],40,200,140)}
+ }
+ l=cl(l+sw(x,y));
+ if(ax>cw-1.3){l=Math.max(l,.7);const g=l*235;return out(pick(l,0),g*.75,g*.7,g)}
+ const g=20+l*235;
+ return out(ch||pick(l,hs(c,r,FL)*1.4-.7),g*.95,g*.97,g*1.04);
+}
+
+function cloak(x,y,ax,c,r,ho,bw){
+ const f=Math.sin(x*1.3+Math.sin(y*.22+T*.6)*2.2+T*.4);
+ const e=Math.max(cl((ho-.72)/.28),y>2?cl((ax-bw+3)/3):0);
+ const l=cl(.1+.24*Math.max(0,f)+.05*hs(c,r,FL)+.3*e*(.6+.4*Math.sin(T*1.5+y*.3)));
+ return out(pick(l,hs(c,r,FL)-.5),l*200,l*125,l*320);
+}
+
+function sample(x,y,c,r){
+ const ax=Math.abs(x);
+ const rx=10.5-Math.max(0,y-FY-2)*.45,nx=x/rx,ny=(y-FY)/14,d=nx*nx+ny*ny;
+ if(d<1&&rx>.6) return face(x,y,ax,nx,ny,d,c,r);
+ const yc=10-cl(ax-6,0,8)*.7,cw=13+Math.max(0,y-10)*.9;
+ if(y>=yc&&ax<cw) return collar(x,y,ax,cw,c,r);
+ const hi=(x/14.5)**2+((y+6)/18)**2;
+ if(hi<1){
+  if(hi>.78){const e=((hi-.78)/.22)**2,l=.12+.75*e;return out(pick(l,hs(c,r,FL)-.5),l*50,l*255,l*190)}
+  return hs(c,r,FL)<.035?out('.',70,40,120):0;
+ }
+ const ho=(x/21)**2+((y+6)/22)**2,bw=17+Math.max(0,y-2)*.5+Math.sin(y*.45+T*1.1)*1.1;
+ if(ho<1||(y>2&&ax<bw)) return cloak(x,y,ax,c,r,ho,bw);
+ return 0;
+}
+
+const emb=Array.from({length:44},()=>({x:Math.random()*W,y:Math.random()*H,v:1+Math.random()*3,p:Math.random()*6,k:Math.random()<.5}));
+let last=0;const t0=performance.now();
+function frame(now){
+ const dt=Math.min(.05,(now-last)/1000)*TS;last=now;
+ T=(now-t0)/1000*TS;FL=Math.floor(T*9);
+ LX=(ptr?mx:Math.sin(T*.5)*.7)*.9-.1;LY=(ptr?my:Math.cos(T*.37)*.4)*.8-.45;
+ ctx.fillStyle='#000';ctx.fillRect(0,0,W*CW,H*CH);
+ const pr=Math.min(1,T/3.2),rv=pr*(H+2),gl=T>3.4&&(T%5)>4.85;
+ for(let r=0;r<H&&r<=rv;r++){
+  const sh=gl&&r%11<3?Math.round((hs(r,2,Math.floor(T*40))-.5)*10):0,scan=pr<1&&r>rv-2,y=r-H/2+.5;
+  for(let c=0;c<W;c++){
+   if(!sample((c+sh-W/2+.5)*.6,y,c,r))continue;
+   ctx.fillStyle=scan?'#8fffd2':`rgb(${q(oR)},${q(oG)},${q(oB)})`;
+   ctx.fillText(oc,c*CW,r*CH);
+  }
+ }
+ if(pr>.8)for(const e of emb){
+  e.y-=e.v*dt*2;e.x+=Math.sin(T+e.p)*dt*2;
+  if(e.y<0){e.y=H;e.x=Math.random()*W}
+  ctx.globalAlpha=.25+.5*Math.abs(Math.sin(T*2+e.p));
+  ctx.fillStyle=e.k?'#3dffb4':'#a07bff';
+  ctx.fillText('.*+`'[Math.floor(e.p)%4],e.x*CW,e.y*CH);
+ }
+ ctx.globalAlpha=1;
+ requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script></body></html>

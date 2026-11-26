@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Creation of Adam — ASCII</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+  body {
+    display: grid; place-items: center;
+    background: #111;
+    color: #eeeae1;
+    font-family: "Courier New", monospace;
+  }
+  #scene { position: relative; width: 100vw; height: 100vh; }
+  #stars, #god, #adam, #halo {
+    position: absolute;
+    white-space: pre;
+    line-height: 1.05;
+    font-size: clamp(8px, 1.05vw, 17px);
+  }
+  #stars { inset: 3% 5%; color: #aaa69f; opacity: .45; }
+  #halo {
+    left: 50%; top: 34%; transform: translate(-50%, -50%);
+    color: #9e9a92;
+    opacity: .3; animation: breathe 5s ease-in-out infinite;
+  }
+  #god {
+    left: 9%; top: 25%;
+    text-align: center;
+    transform-origin: 100% 50%;
+    animation: godReach 5s ease-in-out infinite;
+  }
+  #adam {
+    right: 8%; top: 42%;
+    text-align: center;
+    transform-origin: 0 50%;
+    animation: adamReach 5s ease-in-out infinite;
+  }
+  #spark {
+    position: absolute; left: 50%; top: 50%;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #fffaf0; transform: translate(-50%, -50%) scale(0);
+    box-shadow: 0 0 14px 4px #fff6dc, 0 0 36px 8px rgba(255,240,180,.25);
+    animation: touch 5s ease-in-out infinite;
+  }
+  @keyframes godReach {
+    0%,100% { transform: translate(8px, 6px) rotate(2deg); }
+    48%,58% { transform: translate(-5px, 0) rotate(-1deg); }
+  }
+  @keyframes adamReach {
+    0%,100% { transform: translate(-8px, 2px) rotate(-2deg); }
+    48%,58% { transform: translate(5px, 0) rotate(1deg); }
+  }
+  @keyframes touch {
+    0%,43%,65%,100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    50% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    58% { transform: translate(-50%, -50%) scale(.35); opacity: .8; }
+  }
+  @keyframes breathe { 50% { opacity: .55; transform: translate(-50%, -50%) scale(1.04); } }
+  @media (max-width: 700px) {
+    #stars, #god, #adam, #halo { font-size: 7px; }
+  }
+</style>
+</head>
+<body>
+<main id="scene" aria-label="ASCII animation inspired by Michelangelo's Creation of Adam">
+<pre id="stars">.       ·       *       ·              ·        *                 ·
+  ·             ·          ·                 ·       ·             *
+       *                 ·         ·                 ·       ·
+            ·           ·            *            ·                ·
+.                 ·                     ·             ·       ·
+
+                                   ·        ·
+              ·                  *                 ·
+        ·                              ·</pre>
+<pre id="halo">              _-‐-_
+          _-´       `-_
+       _-'   .  ·  .    '-_
+     -'      ·  ◦  ·       '-
+    /          ·       ·       \
+   |             ·              |
+    \        ·        ·        /
+     '-.    ·   ·   ·    .-'
+        '-_           _-'
+           `-_____-´</pre>
+<pre id="god">                    /\
+                 .-'  '-.
+                /  o  o  \
+               |    ∧     |
+                \  _-_'  /
+        /\        `---´
+       /  \       /| |
+      /    \_____/ | |
+     /  ,----.     | |
+    /  /      \    | |
+   /  /        \   | |
+  /  /          \  | |
+ /  /      .-._  \ | |
+(  /      /    \  \| |
+ \|      /      \   | \
+  |_____/        \  |  \
+   \
+      ARM		 HAND
+    ===·==================·-.
+                          \|
+                           \====</pre>
+<pre id="adam">                      /\
+                     /  \
+                    /    \
+                   /      \
+                  /        \
+                 /  .--.   \
+                (  /    \  )
+                 \|      |/
+                  |\____/|
+                  |      |
+                  |      |
+                 /|      |\
+                / |      | \
+               /  |      |  \
+              /   |      |   \
+             /    |      |    \
+            /     |      |     \
+           /      |      |      \
+          /       |      |       \
+         /        |      |        \
+        /         |      |         \
+          -.-====-
+     /----·------------------- ARM
+            \ HAND /</pre>
+<div id="spark"></div>
+</main>
+</body>
+</html>
