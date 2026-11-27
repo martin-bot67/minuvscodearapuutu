@@ -5,7 +5,7 @@
 <style>
 html,body{margin:0;height:100%;background:#000}
 body{display:flex;align-items:center;justify-content:center;overflow:hidden;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);box-sizing:border-box}
-canvas{display:block;max-width:100%}
+canvas{position:fixed;inset:0;display:block;width:100vw;height:100vh;max-width:none}
 </style></head><body>
 <canvas id="c" role="img" aria-label="Animated ASCII portrait of a snow leopard that shifts in 3D with the pointer"></canvas>
 <script>
@@ -15,10 +15,10 @@ const LB=dec("7u7u7e/w8fHy8e/y8e7o4+Tk5eTk5OTl6Ons7fDv8PDw7+/x8vLy8/Py8vT19fTz9P
 const RAMP=" .'`,:;-~_=+!i<>*^/|()[]{}1lI7?xvcznuYUJCL0OZmwpdbkhao#MW&8%B@$",RN=RAMP.length-1;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 const MIN=Math.min,MAX=Math.max,sn=Math.sin,ab=Math.abs;
-let CW,CH,mx=0,my=0,ptr=false;
+let CW,CH,offsetX=0,offsetY=0,viewW=innerWidth,viewH=innerHeight,mx=0,my=0,ptr=false;
 addEventListener('pointermove',e=>{ptr=true;mx=e.clientX/innerWidth*2-1;my=e.clientY/innerHeight*2-1});
-function fit(){const d=devicePixelRatio||1,fs=MIN(innerWidth/(W*.6),innerHeight/H);CW=fs*.6;CH=fs;
- cv.width=W*CW*d;cv.height=H*CH*d;cv.style.width=W*CW+'px';cv.style.height=H*CH+'px';
+function fit(){const d=devicePixelRatio||1;viewW=innerWidth;viewH=innerHeight;const fs=MIN(viewW/(W*.6),viewH/H);CW=fs*.6;CH=fs;offsetX=(viewW-W*CW)/2;offsetY=(viewH-H*CH)/2;
+ cv.width=viewW*d;cv.height=viewH*d;cv.style.width=viewW+'px';cv.style.height=viewH+'px';
  ctx.setTransform(d,0,0,d,0,0);ctx.font='bold '+fs*.95+'px Menlo,Consolas,"DejaVu Sans Mono",monospace';ctx.textBaseline='top'}
 addEventListener('resize',fit);fit();
 const hs=(a,b,c)=>{const n=sn(a*127.1+b*311.7+c*74.7)*43758.5453;return n-Math.floor(n)};
@@ -28,6 +28,7 @@ for(let i=0;i<CELLS;i++){Lf[i]=LB[i]/255;Mk[i]=MB[i]/255;Dd[i]=DB[i]/255}
 for(let r=1;r<H-1;r++)for(let c=1;c<W-1;c++){const i=r*W+c;GX[i]=Lf[i+1]-Lf[i-1];GY[i]=Lf[i+W]-Lf[i-W]}
 const EY=[[.3136*W,.4042*H],[.4341*W,.6145*H]];
 const fl=Array.from({length:150},()=>({x:Math.random()*W,y:Math.random()*H,z:Math.random(),p:Math.random()*6}));
+const sky=Array.from({length:500},()=>({x:Math.random(),y:Math.random(),z:Math.random(),p:Math.random()*6}));
 const TS=matchMedia('(prefers-reduced-motion: reduce)').matches?.25:1;
 let last=0,lastDraw=0;const t0=performance.now();
 function frame(now){
@@ -37,10 +38,16 @@ function frame(now){
  const T=(now-t0)/1000*TS,FL=Math.floor(T*9);
  const ox=(ptr?mx:sn(T*.35)*.6)*7,oy=(ptr?my:Math.cos(T*.27)*.4)*4;
  const br=1+.012*sn(T*1.3),cx=W*.45,cy=H*.55,wind=.8+.6*sn(T*.5);
+ ctx.fillStyle='#000';ctx.fillRect(0,0,viewW,viewH);const artFont=ctx.font;
+ for(const f of sky){f.y+=(.08+f.z*.22)*dt;f.x+=(wind*.025+sn(T+f.p)*.01)*dt;if(f.y>1){f.y=-.02;f.x=Math.random()}if(f.x>1)f.x=0}
+ ctx.font='14px Menlo,Consolas,"DejaVu Sans Mono",monospace';
+ for(const f of sky)if(f.z<.5){ctx.globalAlpha=.25+.45*f.z;ctx.fillStyle='#bfe8ff';ctx.fillText(f.z>.35?'+':'.',f.x*viewW,f.y*viewH)}
+ ctx.globalAlpha=1;ctx.font=artFont;
+ ctx.save();ctx.translate(offsetX,offsetY);
  ctx.fillStyle='#000';ctx.fillRect(0,0,W*CW,H*CH);
  for(const f of fl){f.y+=(.5+f.z)*dt*6;f.x+=(wind*(.3+f.z)+sn(T+f.p)*.4)*dt*3;if(f.y>H||f.x>W){f.y=-1;f.x=Math.random()*W}}
  for(const f of fl)if(f.z<.45){const c=f.x|0,r=f.y|0;if(r>=0&&r<H&&Mk[r*W+c]<.15){ctx.globalAlpha=.25+f.z;ctx.fillStyle='#bfe8ff';ctx.fillText('.',f.x*CW,f.y*CH)}}
- ctx.globalAlpha=1;
+ ctx.globalAlpha=1;ctx.font=artFont;
  const rv=MIN(1,T/1.8)*(H+2),gl=T>2.2&&(T%6)>5.85,blink=(T%5.2)>5.05;
  for(let r=0;r<H&&r<=rv;r++){
   const sh=gl&&r%9<3?Math.round((hs(r,2,Math.floor(T*40))-.5)*8):0,scan=r>rv-2&&T<1.9;
@@ -68,7 +75,9 @@ function frame(now){
   }
  }
  for(const f of fl)if(f.z>=.45){ctx.globalAlpha=.3+.6*f.z;ctx.fillStyle=f.z>.8?'#ffffff':'#bfe8ff';ctx.fillText(f.z>.8?'*':'+',f.x*CW,f.y*CH)}
- ctx.globalAlpha=1;
+ ctx.restore();ctx.font='14px Menlo,Consolas,"DejaVu Sans Mono",monospace';
+ for(const f of sky)if(f.z>=.5){ctx.globalAlpha=.3+.5*f.z;ctx.fillStyle=f.z>.8?'#ffffff':'#bfe8ff';ctx.fillText(f.z>.8?'*':'+',f.x*viewW,f.y*viewH)}
+ ctx.globalAlpha=1;ctx.font=artFont;
 }
 requestAnimationFrame(frame);
 </script></body></html>
