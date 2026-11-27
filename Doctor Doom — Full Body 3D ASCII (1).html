@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Doctor Doom — Full Body 3D ASCII</title>
+<style>
+html,body{margin:0;height:100%;background:#000}
+body{display:flex;align-items:center;justify-content:center;overflow:hidden;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);box-sizing:border-box}
+canvas{display:block;max-width:100%}
+</style></head><body>
+<canvas id="c" role="img" aria-label="Walking 3D ASCII Doctor Doom that turns toward the pointer"></canvas>
+<script>
+// Full-body 3D: every character cell casts a ray into a signed-distance model of Doom.
+// The model walks (legs, arms, bob, cape), the camera turns with your pointer.
+const W=72,H=90,RAMP=" .`',:;-~=+*xvX#%&WN@$",N=RAMP.length-1,WS=2.6;
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const MAX=Math.max,MIN=Math.min,sqrt=Math.sqrt,sn=Math.sin,cos=Math.cos,abs=Math.abs,hyp=Math.hypot;
+const TS=matchMedia('(prefers-reduced-motion: reduce)').matches?.25:1;
+let CW,CH,mx=0,my=0,ptr=false,T=0,FL=0,BY=0,M=0;
+let cY=1,sY=0,cP=1,sP=0,RX=0,RY=0,RZ=0,L=[0,0,1],RL=[0,0,-1],OX=0,OY=0,OZ=14;
+const AR=[[],[]],LG=[[],[]];
+addEventListener('pointermove',e=>{ptr=true;mx=e.clientX/innerWidth*2-1;my=e.clientY/innerHeight*2-1});
+function fit(){const d=devicePixelRatio||1,fs=MIN(innerWidth/(W*.6),innerHeight/H);CW=fs*.6;CH=fs;
+ cv.width=W*CW*d;cv.height=H*CH*d;cv.style.width=W*CW+'px';cv.style.height=H*CH+'px';
+ ctx.setTransform(d,0,0,d,0,0);ctx.font='bold '+fs*.95+'px Menlo,Consolas,"DejaVu Sans Mono",monospace';ctx.textBaseline='top'}
+addEventListener('resize',fit);fit();
+const hs=(a,b,c)=>{const n=sn(a*127.1+b*311.7+c*74.7)*43758.5453;return n-Math.floor(n)};
+const cl=(v,a=0,b=1)=>v<a?a:v>b?b:v;
+const q=v=>v>255?255:v<0?0:v|0;
+const pick=(l,j)=>RAMP[cl(Math.round(l*N+j),1,N)];
+const smin=(a,b,k)=>{const h=cl(.5+.5*(b-a)/k);return b+(a-b)*h-k*h*(1-h)};
+const bx=(a,b,c,hx,hy,hz)=>{const x=abs(a)-hx,y=abs(b)-hy,z=abs(c)-hz;return hyp(MAX(x,0),MAX(y,0),MAX(z,0))+MIN(MAX(x,y,z),0)};
+function cap(px,py,pz,ax,ay,az,bx2,by,bz,r){const ex=bx2-ax,ey=by-ay,ez=bz-az,wx=px-ax,wy=py-ay,wz=pz-az,h=cl((wx*ex+wy*ey+wz*ez)/(ex*ex+ey*ey+ez*ez));return hyp(wx-ex*h,wy-ey*h,wz-ez*h)-r}
+const el=(x,y,z,cx,cy,cz,rx,ry,rz)=>{const k0=hyp((x-cx)/rx,(y-cy)/ry,(z-cz)/rz);const k1=hyp((x-cx)/(rx*rx),(y-cy)/(ry*ry),(z-cz)/(rz*rz));return k0*(k0-1)/MAX(k1,.001)}
+
+// ---- walk cycle: legs, arms, bob ----
+function pose(){
+ const f=T*WS;BY=-.1+sn(f*2)*.05;
+ for(let s=0;s<2;s++){
+  const sg=s?1:-1,ph=f+(s?Math.PI:0),th=sn(ph)*.4,th2=th-MAX(0,cos(ph))*.8;
+  const kx=sg*.42,ky=-.6-cos(th),kz=sn(th),ax=kx,ay=ky-cos(th2)*1.6,az=kz+sn(th2)*1.6;
+  LG[s]=[sg*.42,-.6,0,kx,ky,kz,ax,ay,az,ax,ay-.42,az+.5];
+  const ap=f+(s?0:Math.PI),al=sn(ap)*.5,be=al+.25+MAX(0,sn(ap))*.5;
+  const ex=sg*1.11,ey=1.95-cos(al)*1.1,ez=sn(al)*1.1,wx=ex+sg*.15,wy=ey-cos(be),wz=ez+sn(be);
+  AR[s]=[sg,1.95,0,ex,ey,ez,wx,wy,wz,wx+sg*.05,wy-cos(be)*.45,wz+sn(be)*.45];
+  AR[s][0]=sg*1.0;
+ }
+}
+
+// ---- head + hood (modelled in a 2x scaled local space) ----
+function head(x,y,z){
+ const X=x*2,Y=(y-3.12)*2+.45,Z=z*2,ax=abs(X),t=cl((.45-Y)/.85);
+ let d=(sqrt(((X/.62)*(1+t*1.1))**2+((Y-.45)/.85)**2+((Z/.62)*(1+t*.5))**2)-1)*.5;
+ d=smin(d,bx(X,Y-.64-ax*.25,Z-.52,.52,.07,.12),.07);
+ d=smin(d,bx(X,Y-.4,Z-.58,.07,.25,.11),.06);
+ d=smin(d,hyp(ax-.3,Y-.25,Z-.45)-.19,.1);
+ const el=Y-.52-(ax-.27)*.15;
+ d=MAX(d,-bx(ax-.27,el,Z-.5,.17,.075,.25));
+ if(Y<.22&&Y>-.05&&ax<.18&&Z>.2&&sn(X*55)>0)d+=.035;
+ let m=1,b=d;
+ const ey=bx(ax-.27,el,Z-.4,.14,.035,.03);if(ey<b){b=ey;m=4}
+ let h=MAX((sqrt((X/1.25)**2+((Y-.35)/1.45)**2+((Z+.25)/1.1)**2)-1)*1.1,-(sqrt((X/.86)**2+((Y-.35)/1.2)**2+((Z-.05)/1.05)**2)-1)*.98);
+ h+=.03*sn(X*5+sn(Y*2.2+T)*1.4+T*.9);
+ if(h<b){b=h;m=3}
+ M=m;return b*.5;
+}
+
+// materials: mask1 armor2 cloth3 eyes4 glow5 bright-metal6 floor7
+function map(x,y0,z){
+ const y=y0-BY,ax=abs(x),s=x<0?0:1;
+ let b=y0+3.85,m=7,d;
+ const w=cl((1.2-y)/4),gu=.6+.4*sn(T*.9)+.3*sn(T*2.3),zc=-.5+.3*(ax/1.55)**2*(1-.6*w)-w*.35*gu+w*(.09*sn(y*4-T*5+x*2.5)+.05*sn(y*7-T*8+x*4)+.06*sn(x*6+T*3))+.03*(1-w)*sn(x*7+T*.6);        // cape
+ const dc=bx(x-w*w*.55*gu,y+.05,z-zc,(1.55+w*.15)*(.55+.45*cl((2.9-y)/.7)),2.95,.04+.06*(1-w))*.6;if(dc<b){b=dc;m=3}
+ if(y>2.2){d=head(x,y,z);if(d<b){b=d;m=M}}else{d=2.3-y;if(d<b){b=d;m=3}}
+ if(y<3.2&&y>-1.3){
+  d=el(x,y,z,0,2.42,0,.34,.28,.31);if(d<b){b=d;m=2}                           // armored neck
+   d=el(x,y,z,0,1.55,0,.82,.82,.34);if(d<b){b=d;m=2}                           // broad, tapered chest
+   d=el(x,y,z,0,.72,0,.66,.42,.32);if(d<b){b=d;m=2}                            // waist and abdomen
+   d=el(x,y,z,0,-.28,0,.62,.48,.38);if(d<b){b=d;m=2}                           // pelvis
+   d=smin(el(x,y,z,0,.72,z*.05+.02,.78,.18,.38),el(x,y,z,0,-.02,z*.05+.02,.70,.24,.40),.10);if(d<b){b=d;m=2} // curved overlapping belt
+   d=el(x,y,z,0,-.72,z-.32,.24,.15,.055);if(d<b){b=d;m=6}                      // rounded belt buckle
+   d=smin(el(ax-.50,y+.10,z-.02,.20,.58,.31),el(ax-.62,y-.48,z-.03,.17,.38,.30),.12);if(d<b){b=d;m=2} // curved tassets
+   d=smin(el(x,y+.42,z-.30,.36,.72,.045),el(x,y-.38,z-.32,.28,.50,.055),.10);if(d<b){b=d;m=3} // rounded hanging tabard
+  d=smin(dc,(hyp(x/1.3,(y-2.5+ax*.28)/.5,(z+.08)/.62)-1)*.5,.35);if(d<b){b=d;m=3}              // shoulder cloak
+  d=hyp(ax-.6,y-2.22,z-.38)-.17;if(d<b){b=d;m=5}                             // medallions
+  d=cap(ax,y,z,.6,2.2,.4,0,2.05,.46,.03);if(d<b){b=d;m=6}                    // chain
+  const a=AR[s];
+  d=el(x,y,z,x<0?-1.05:1.05,1.93,0,.42,.28,.36);if(d<b){b=d;m=2}             // sloped pauldron
+  d=cap(x,y,z,a[0],a[1],a[2],a[3],a[4],a[5],.24);if(d<b){b=d;m=2}            // upper arm
+  d=cap(x,y,z,a[3],a[4],a[5],a[6],a[7],a[8],.20);if(d<b){b=d;m=2}            // forearm armor
+  d=el(x,y,z,a[9],a[10],a[11],.19,.24,.17);if(d<b){b=d;m=2}                    // metal hand
+  d=cap(x,y,z,a[6],a[7],a[8],a[9],a[10],a[11],.14);if(d<b){b=d;m=2}          // armored wrist
+ }else{d=y>0?y-3.05:-1.15-y;if(d<b){b=d;m=3}}
+ if(y<-.15){
+  const l=LG[s];
+  d=cap(x,y,z,l[0],l[1],l[2],l[3],l[4],l[5],.30);if(d<b){b=d;m=3}            // tapered trouser thigh
+  d=el(x,y,z,l[3],l[4],l[5],.34,.30,.32);if(d<b){b=d;m=2}                      // armored knee
+  d=cap(x,y,z,l[3],l[4],l[5],l[6],l[7],l[8],.24);if(d<b){b=d;m=2}            // shin/greave
+  d=el(x,y,z,l[6],l[7],l[8],.24,.28,.22);if(d<b){b=d;m=2}                      // calf armor
+  d=bx(x-l[9],y-l[10]+.08,z-l[11]-l[11]*.18,.28,.14,.44);if(d<b){b=d;m=2}     // pointed boot
+ }else{d=y+.3;if(d<b){b=d;m=3}}
+ M=m;return b;
+}
+const K=[[1,-1,-1],[-1,-1,1],[-1,1,-1],[1,1,1]];
+function rot(x,y,z){const x1=x*cY-z*sY,z1=x*sY+z*cY;RX=x1;RY=y*cP+z1*sP;RZ=-y*sP+z1*cP}
+
+function trace(dx,dy,dz){
+ let tn=0,tf=99,i1,a,b,k;
+ i1=1/dx;a=(-2.3-OX)*i1;b=(2.3-OX)*i1;if(a>b){k=a;a=b;b=k}tn=MAX(tn,a);tf=MIN(tf,b);
+ i1=1/dy;a=(-4-OY)*i1;b=(4-OY)*i1;if(a>b){k=a;a=b;b=k}tn=MAX(tn,a);tf=MIN(tf,b);
+ i1=1/dz;a=(-3-OZ)*i1;b=(3-OZ)*i1;if(a>b){k=a;a=b;b=k}tn=MAX(tn,a);tf=MIN(tf,b);
+ if(tn>tf)return 0;
+ let t=tn;
+ for(let i=0;i<36;i++){
+  const d=map(OX+dx*t,OY+dy*t,OZ+dz*t);
+  if(d<.007)return t;
+  t+=d*.8;if(t>tf)return 0;
+ }
+ return 0;
+}
+
+let oc,oR,oG,oB;
+const out=(c,R,G,B)=>{oc=c;oR=R;oG=G;oB=B};
+function shade(px,py,pz,dx,dy,dz,m,c,r){
+ if(m===4){const p=.6+.4*sn(T*2.4);return out(hs(c,r,FL)>.5?'@':'#',60*p,255*p,180*p)}
+ if(m===5){const p=.5+.5*sn(T*2.2);return out('@#*%'[Math.floor(hs(c,r,FL)*4)],100+120*p,200+55*p,150+60*p)}
+ if(m===7){
+  const gz=pz-T*WS*.9,ln=((gz*1.6)%1+1)%1<.1||((px*1.6)%1+1)%1<.08;
+  const l=(ln?.55:.1)*(.25+.75*cl(hyp(px,pz*.7)/1.4))*Math.exp(-(px*px+pz*pz)*.1)+.02;
+  return out(ln?'=':pick(l,0),l*60,l*255,l*170);
+ }
+ const E=.015;let nx=0,ny=0,nz=0;
+ for(const k of K){const f=map(px+k[0]*E,py+k[1]*E,pz+k[2]*E);nx+=k[0]*f;ny+=k[1]*f;nz+=k[2]*f}
+ const il=1/hyp(nx,ny,nz);nx*=il;ny*=il;nz*=il;
+ const f1=map(px+nx*.15,py+ny*.15,pz+nz*.15),f2=map(px+nx*.4,py+ny*.4,pz+nz*.4);
+ const ao=cl(1-2.2*MAX(0,.15-f1)-1.0*MAX(0,.4-f2),.1,1);
+ const nd=nx*dx+ny*dy+nz*dz,ndl=MAX(0,nx*L[0]+ny*L[1]+nz*L[2]),fr=(1-MAX(0,-nd))**3;
+ const rx=dx-2*nd*nx,ry=dy-2*nd*ny,rz=dz-2*nd*nz;
+ const rl=MAX(0,rx*L[0]+ry*L[1]+rz*L[2]),rim=MAX(0,nx*RL[0]+ny*RL[1]+nz*RL[2]);
+ if(m===3){
+  const l=cl(.05+.5*ndl*ao+.08*ao+.15*rim*ao);
+  return out(pick(l,hs(c,r,FL)-.5),l*70+fr*30,l*230+fr*140,l*90+fr*90);
+ }
+ const ev=MAX(0,sn(rx*3.2+ry*1.8+T*.5))**4*.7+MAX(0,ry)*.25+.05;
+ let l=m===1?.08+.75*ndl*ao**.5+ev*.18+rl**20*.7+rim*.2:.05+.45*ndl*ao+ev*ao*(m===6?.8:.45)+rl**28*.9+rim*.25*ao,ch='';
+ const yy=py-BY;
+ if(m===2){
+  if(abs(px)<.7&&yy>1.08&&yy<2.15&&pz>.15&&(((px*5.9)%1+1)%1<.1||((yy*5.9)%1+1)%1<.1)){l*=.3;ch='+'}
+  else if(abs(sn(yy*8))<.05&&yy>-.35&&yy<2.15){l*=.35;ch='='}
+  else if(yy>.18&&yy<1.34&&abs(px)<.58&&pz>.20&&abs(sn((yy-.18)*7.2))<.035){l*=.45;ch='-'}
+  else if(yy>.05&&yy<1.28&&abs(px)<.06&&pz>.24){l*=.38;ch=':'}
+ }
+ l=cl(l);if(m===1)l=l*l*(3-2*l);
+ const g=l*255,tint=m===1?[1,.93,.84]:m===6?[.95,.95,1]:[.78,.9,.88];
+ return out(ch||pick(l,(hs(c,r,FL)-.5)*(m===1?.3:1.2)),g*tint[0]+fr*20,g*tint[1]+fr*(m===1?110:70),g*tint[2]+fr*70);
+}
+
+const emb=Array.from({length:44},()=>({x:Math.random()*W,y:Math.random()*H,v:1+Math.random()*3,p:Math.random()*6,k:Math.random()<.5}));
+let last=0,lastDraw=0;const t0=performance.now();
+function frame(now){
+ requestAnimationFrame(frame);
+ if(now-lastDraw<32)return;
+ const dt=MIN(.06,(now-last)/1000)*TS;last=now;lastDraw=now;
+ T=(now-t0)/1000*TS;FL=Math.floor(T*9);pose();
+ const yaw=ptr?mx*.7:sn(T*.4)*.35,pit=(ptr?my*.15:0)+.12;
+ cY=cos(yaw);sY=sn(yaw);cP=cos(pit);sP=sn(pit);
+ rot(0,.1,14);OX=RX;OY=RY;OZ=RZ;
+ rot(-.45+(ptr?mx*.4:sn(T*.5)*.5),.9,1.3);let n=hyp(RX,RY,RZ);L=[RX/n,RY/n,RZ/n];
+ rot(.9,.4,-.8);n=hyp(RX,RY,RZ);RL=[RX/n,RY/n,RZ/n];
+ ctx.fillStyle='#000';ctx.fillRect(0,0,W*CW,H*CH);
+ const pr=MIN(1,T/3.5),rv=pr*(H+2),gl=T>3.6&&(T%5)>4.85,sc=3.95/(H/2);
+ for(let r=0;r<H&&r<=rv;r++){
+  const sh=gl&&r%11<3?Math.round((hs(r,2,Math.floor(T*40))-.5)*10):0,scan=pr<1&&r>rv-2,sy=(H/2-r-.5)*sc;
+  for(let c=0;c<W;c++){
+   const sx=(c+sh-W/2+.5)*.6*sc,il=1/hyp(sx,sy,14);
+   rot(sx*il,sy*il,-14*il);
+   const dx=RX,dy=RY,dz=RZ,t=trace(dx,dy,dz);
+   if(!t)continue;
+   const m=M;
+   shade(OX+dx*t,OY+dy*t,OZ+dz*t,dx,dy,dz,m,c,r);
+   ctx.fillStyle=scan?'#8fffd2':`rgb(${q(oR)},${q(oG)},${q(oB)})`;
+   ctx.fillText(oc,c*CW,r*CH);
+  }
+ }
+ if(pr>.8)for(const e of emb){
+  e.y-=e.v*dt*2;e.x+=sn(T+e.p)*dt*2+dt*4*(.6+.4*sn(T*.9));
+  if(e.y<0||e.x>W){e.y=Math.random()*H;e.x=0}
+  ctx.globalAlpha=.25+.5*abs(sn(T*2+e.p));
+  ctx.fillStyle=e.k?'#3dffb4':'#a07bff';
+  ctx.fillText('.*+`'[Math.floor(e.p)%4],e.x*CW,e.y*CH);
+ }
+ ctx.globalAlpha=1;
+}
+requestAnimationFrame(frame);
+</script></body></html>
